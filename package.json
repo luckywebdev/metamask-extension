@@ -204,7 +204,8 @@
     "unicode-confusables": "^0.1.1",
     "valid-url": "^1.0.9",
     "web3": "^0.20.7",
-    "web3-stream-provider": "^4.0.0"
+    "web3-stream-provider": "^4.0.0",
+    "wif": "^2.0.6"
   },
   "devDependencies": {
     "@babel/code-frame": "^7.12.13",

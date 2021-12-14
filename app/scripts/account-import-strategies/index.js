@@ -1,5 +1,7 @@
 import log from 'loglevel';
 import Wallet from 'ethereumjs-wallet';
+// import * as bs58 from 'bs58check';
+import { computeAddress, QtumWallet } from 'qtum-ethers-wrapper';
 import importers from 'ethereumjs-wallet/thirdparty';
 import {
   toBuffer,
@@ -7,6 +9,7 @@ import {
   bufferToHex,
   stripHexPrefix,
 } from 'ethereumjs-util';
+import wif from 'wif';
 import { addHexPrefix } from '../lib/util';
 
 const accountImporter = {
@@ -14,6 +17,7 @@ const accountImporter = {
     try {
       const importer = this.strategies[strategy];
       const privateKeyHex = importer(...args);
+      console.log('[importer]', privateKeyHex);
       return Promise.resolve(privateKeyHex);
     } catch (e) {
       return Promise.reject(e);
@@ -26,10 +30,29 @@ const accountImporter = {
         throw new Error('Cannot import an empty key.');
       }
 
-      const prefixed = addHexPrefix(privateKey);
-      const buffer = toBuffer(prefixed);
+      // eslint-disable-next-line require-unicode-regexp
+      const isBase58 = (value) => /^[A-HJ-NP-Za-km-z1-9]*$/.test(value);
+      let prefixed;
+      let buffer;
+      if (isBase58(privateKey)) {
+        const pBuffer = wif.decode(privateKey);
+        prefixed = `0x${pBuffer.privateKey.toString('hex')}`;
+        // const computeAdd = computeAddress(prefixed);
+        buffer = toBuffer(prefixed);
+
+        // const qWallet = new QtumWallet(privateKey);
+
+        // // const computeAdd = computeAddress(prefixed2);
+        // console.log('[decodedPrivateKey]', qWallet);
+
+        // console.log('[buffer]', this.preferencesController.store.getState());
+      } else {
+        prefixed = addHexPrefix(privateKey);
+        buffer = toBuffer(prefixed);
+      }
 
       if (!isValidPrivate(buffer)) {
+        console.log('[buffer]', isValidPrivate(buffer));
         throw new Error('Cannot import invalid private key.');
       }
 
