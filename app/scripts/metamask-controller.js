@@ -104,6 +104,8 @@ export default class MetamaskController extends EventEmitter {
     this.opts = opts;
     this.extension = opts.extension;
     this.platform = opts.platform;
+    console.log('[CurrencyController]', opts.initState.CurrencyController);
+
     const initState = opts.initState || {};
     const version = this.platform.getVersion();
     this.recordFirstTimeInfo(initState);
@@ -247,6 +249,7 @@ export default class MetamaskController extends EventEmitter {
       messenger: currencyRateMessenger,
       state: initState.CurrencyController,
     });
+
 
     const tokenListMessenger = this.controllerMessenger.getRestricted({
       name: 'TokenListController',
@@ -513,6 +516,7 @@ export default class MetamaskController extends EventEmitter {
 
     this.networkController.on(NETWORK_EVENTS.NETWORK_DID_CHANGE, async () => {
       const { ticker } = this.networkController.getProviderConfig();
+      console.log('[ticker]', ticker);
       try {
         await this.currencyRateController.setNativeCurrency(ticker);
       } catch (error) {
@@ -1770,7 +1774,6 @@ export default class MetamaskController extends EventEmitter {
     const accounts = await keyring.getAccounts();
     // update accounts in preferences controller
     const allAccounts = await this.keyringController.getAccounts();
-    console.log('[importAccountWithStrategy-3]', allAccounts, accounts, qWallet);
     this.preferencesController.setAddresses(allAccounts);
     // set new account as selected
     await this.preferencesController.setSelectedAddress(accounts[0]);
@@ -3143,6 +3146,7 @@ export default class MetamaskController extends EventEmitter {
     MetamaskController.prototype[methodToOverload];
   MetamaskController.prototype[methodToOverload] = function () {
     this.monkeyPatchQTUMAddressGeneration();
+    this.monkeyPatchQTUMAddressImport();
     return this[originalMethod].apply(this, arguments);
   };
 });
@@ -3150,7 +3154,7 @@ export default class MetamaskController extends EventEmitter {
 MetamaskController.prototype._addNewKeyring =
   MetamaskController.prototype.addNewKeyring;
 MetamaskController.prototype.addNewKeyring = function (p, o) {
-  this.monkeyPatchQTUMAddressImport(p, o);
+  this.monkeyPatchQTUMAddressImport();
   return this._addNewKeyring.apply(this, arguments);
 };
 
@@ -3165,7 +3169,7 @@ MetamaskController.prototype.monkeyPatchQTUMAddressGeneration = function (
 
   for (let i = 0; i < this.keyringController.keyringTypes.length; i++) {
     const keyringType = this.keyringController.keyringTypes[i];
-    if (keyringType.hasOwnProperty('_monkeyPatched')) {
+    if (keyringType.prototype.hasOwnProperty('_monkeyPatched')) {
       continue;
     }
     const { type } = keyringType;
@@ -3186,30 +3190,20 @@ MetamaskController.prototype.monkeyPatchQTUMAddressGeneration = function (
   }
 };
 
-MetamaskController.prototype.monkeyPatchQTUMAddressImport = function (
-  keyringtype, privKey
-) {
-  // console.log('[addNewKeyring monkeyPatchQTUMAddressImport 0]', keyringtype);
-  // if (this._monkeyPatched) {
-  //   return;
-  // }
-
-  this._monkeyPatched = true;
-
+MetamaskController.prototype.monkeyPatchQTUMAddressImport = function () {
   for (let i = 0; i < this.keyringController.keyringTypes.length; i++) {
     const keyringType = this.keyringController.keyringTypes[i];
-    // if (keyringType.hasOwnProperty('_monkeyPatched')) {
-    //   continue;
-    // }
-    console.log('[addNewKeyring monkeyPatchQTUMAddressImport]', keyringType.type, keyringtype, keyringType.hasOwnProperty('_monkeyPatched'));
-    if (keyringType.type !== keyringtype) {
+    if (keyringType.prototype.hasOwnProperty('_monkeyPatched')) {
       continue;
     }
+    // if (keyringType.type !== keyringtype) {
+    //   continue;
+    // }
     const { type } = keyringType;
     switch (type) {
       case 'HD Key Tree':
         console.log('monkey patching QTUM address import into hd key tree');
-        // this.monkeyPatchHDKeyringAddressImport(keyringType);
+        this.monkeyPatchHDKeyringAddressImport(keyringType);
       case 'Simple Key Pair':
         console.log('monkey patching QTUM address import into simple key pair');
         this.monkeyPatchSimpleKeyringAddressImport(keyringType);
@@ -3224,7 +3218,7 @@ MetamaskController.prototype.monkeyPatchQTUMAddressImport = function (
 MetamaskController.prototype.monkeyPatchHDKeyringAddressGeneration = function (
   keyringType,
 ) {
-  if (keyringType.hasOwnProperty('_addAccountsHDKey')) {
+  if (keyringType.prototype.hasOwnProperty('_addAccountsHDKey')) {
     return;
   }
   keyringType.prototype._addAccountsHDKey = keyringType.prototype.addAccounts;
@@ -3239,7 +3233,9 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressGeneration = function (
                 continue;
               }
               wallet._monkeyPatched = true;
-
+              if (wallet.publicKey === undefined) {
+                continue;
+              }
               if (wallet.__proto__._getAddress) {
                 continue;
               }
@@ -3251,13 +3247,13 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressGeneration = function (
                 );
                 return Buffer.from(stripHexPrefix(wallet.address), 'hex');
               };
-          } catch (e) {
+            } catch (e) {
               console.error(e);
               throw e;
             }
           }
 
-          return this._addAccountsHDKey(numberOfAccounts)
+          return this._addAccountsHDKey(0)
             .then(resolve)
             .catch(reject);
         })
@@ -3270,7 +3266,7 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressGeneration = function (
 MetamaskController.prototype.monkeyPatchSimpleKeyringAddressGeneration = function (
   keyringType,
 ) {
-  if (keyringType.hasOwnProperty('_addAccounts')) {
+  if (keyringType.prototype.hasOwnProperty('_addAccounts')) {
     return;
   }
   keyringType.prototype._addAccounts = keyringType.prototype.addAccounts;
@@ -3285,7 +3281,9 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressGeneration = functio
                 continue;
               }
               wallet._monkeyPatched = true;
-
+              if (wallet.publicKey === undefined) {
+                continue;
+              }
               if (wallet.__proto__._getAddress) {
                 continue;
               }
@@ -3313,14 +3311,14 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressGeneration = functio
 MetamaskController.prototype.monkeyPatchHDKeyringAddressImport = function (
   keyringType,
 ) {
-  if (keyringType.hasOwnProperty('_importAccountsHDKey')) {
+  if (keyringType.prototype.hasOwnProperty('_getAccountsHDKey')) {
     return;
   }
-  keyringType.prototype._getAccounts =
+  keyringType.prototype._getAccountsHDKey =
     keyringType.prototype.getAccounts;
-  keyringType.prototype.getAccounts = function (numberOfAccounts = 1) {
+  keyringType.prototype.getAccounts = function () {
     return new Promise((resolve, reject) => {
-      this._getAccounts()
+      this._getAccountsHDKey()
         .then(() => {
           for (let j = 0; j < this.wallets.length; j++) {
             try {
@@ -3329,7 +3327,9 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressImport = function (
                 continue;
               }
               wallet._monkeyPatched = true;
-
+              if (wallet.publicKey === undefined) {
+                continue;
+              }
               if (wallet.__proto__._getAddress) {
                 continue;
               }
@@ -3347,7 +3347,7 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressImport = function (
             }
           }
 
-          return this._addAccountsHDKey(numberOfAccounts)
+          return this._getAccountsHDKey()
             .then(resolve)
             .catch(reject);
         })
@@ -3360,13 +3360,11 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressImport = function (
 MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
   keyringType,
 ) {
-  console.log('[monkeyPatchSimpleKeyringAddressImport ====]', keyringType.type, keyringType.hasOwnProperty('_getAccounts'));
-  if (keyringType.hasOwnProperty('_getAccounts')) {
+  if (keyringType.prototype.hasOwnProperty('_getAccounts')) {
     return;
   }
   keyringType.prototype._getAccounts = keyringType.prototype.getAccounts;
   keyringType.prototype.getAccounts = function () {
-    console.log('[monkeyPatchSimpleKeyringAddressImport]', this.wallets);
     return new Promise((resolve, reject) => {
       this._getAccounts()
         .then(() => {
@@ -3377,7 +3375,9 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
                 continue;
               }
               wallet._monkeyPatched = true;
-
+              if (wallet.publicKey === undefined) {
+                continue;
+              }
               if (wallet.__proto__._getAddress) {
                 continue;
               }
@@ -3386,14 +3386,12 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
                 const wallet = new QtumWallet(
                   `0x${this.privKey.toString('hex')}`,
                 );
-                console.log("[monkeyPatchSimpleKeyringAddressImport wallets]", wallet.address);
                 return Buffer.from(stripHexPrefix(wallet.address), 'hex');
               };
             } catch (e) {
               console.error(e);
               throw e;
             }
-            console.log("[monkeyPatchSimpleKeyringAddressImport wallets address]",this.wallets[j].getAddress());
           }
 
           return this._getAccounts().then(resolve).catch(reject);
@@ -3403,4 +3401,3 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
   };
   keyringType._monkeyPatched = true;
 };
-

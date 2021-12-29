@@ -279,7 +279,7 @@ export default class NetworkController extends EventEmitter {
     return NETWORK_TYPE_TO_ID_MAP[type]?.chainId || configChainId;
   }
 
-  setRpcTarget(rpcUrl, chainId, ticker = 'ETH', nickname = '', rpcPrefs) {
+  setRpcTarget(rpcUrl, chainId, ticker = 'QTUM', nickname = '', rpcPrefs) {
     assert.ok(
       isPrefixedFormattedHexString(chainId),
       `Invalid chain ID "${chainId}": invalid hex string.`,
@@ -310,7 +310,7 @@ export default class NetworkController extends EventEmitter {
     );
     const { chainId } = NETWORK_TYPE_TO_ID_MAP[type];
     let rpcUrl = '';
-    let ticker = 'ETH';
+    let ticker = 'QTUM';
     const providerType = type;
     if (QTUM_PROVIDER_TYPES.includes(type)) {
       type = NETWORK_TYPE_RPC;
