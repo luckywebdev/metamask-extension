@@ -487,6 +487,16 @@ export function setCurrentCurrency(currencyCode) {
   };
 }
 
+export function setNativeCurrency() {
+  return async () => {
+    try {
+      await promisifiedBackground.setNativeCurrency();
+    } catch (error) {
+      console.log('[setNativeCurrency error]', error);
+    }
+  }
+}
+
 export function signMsg(msgData) {
   log.debug('action - signMsg');
   return async (dispatch) => {

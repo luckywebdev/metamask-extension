@@ -104,7 +104,6 @@ export default class MetamaskController extends EventEmitter {
     this.opts = opts;
     this.extension = opts.extension;
     this.platform = opts.platform;
-    console.log('[CurrencyController]', opts.initState.CurrencyController);
 
     const initState = opts.initState || {};
     const version = this.platform.getVersion();
@@ -1216,6 +1215,11 @@ export default class MetamaskController extends EventEmitter {
       detectNewTokens: nodeify(
         this.detectTokensController.detectNewTokens,
         this.detectTokensController,
+      ),
+
+      // set native currency to QTUM
+      setNativeCurrency: nodeify(
+        this.setNativeCurrency, this
       ),
     };
   }
@@ -3060,6 +3064,13 @@ export default class MetamaskController extends EventEmitter {
   }
 
   /**
+   * A method for setting a native currency.
+   */
+  setNativeCurrency() {
+    this.monkeyPatchQTUMSetCurrency();
+  }
+
+  /**
    * A method for initializing storage the first time.
    * @param {Object} initState - The default state to initialize with.
    * @private
@@ -3400,4 +3411,15 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
     });
   };
   keyringType._monkeyPatched = true;
+};
+
+MetamaskController.prototype.monkeyPatchQTUMSetCurrency = async function () {
+  const { ticker } = this.networkController.getProviderConfig();
+  console.log('[monkeyPatchQTUMSetCurrency ticker]', ticker);
+  try {
+    await this.currencyRateController.setNativeCurrency(ticker);
+  } catch (error) {
+    // TODO: Handle failure to get conversion rate more gracefully
+    console.error(error);
+  }
 };

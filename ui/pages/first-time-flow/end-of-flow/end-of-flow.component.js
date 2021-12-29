@@ -17,6 +17,7 @@ export default class EndOfFlowScreen extends PureComponent {
     history: PropTypes.object,
     completionMetaMetricsName: PropTypes.string,
     setCompletedOnboarding: PropTypes.func,
+    setNativeCurrency: PropTypes.func,
     onboardingInitiator: PropTypes.exact({
       location: PropTypes.string,
       tabId: PropTypes.number,
@@ -54,8 +55,9 @@ export default class EndOfFlowScreen extends PureComponent {
     history.push(DEFAULT_ROUTE);
   };
 
-  componentDidMount() {
+  async componentDidMount() {
     window.addEventListener('beforeunload', this._beforeUnload.bind(this));
+    await this.props.setNativeCurrency();
   }
 
   componentWillUnmount = () => {

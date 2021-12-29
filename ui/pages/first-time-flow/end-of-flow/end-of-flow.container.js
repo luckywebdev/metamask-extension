@@ -1,6 +1,9 @@
 import { connect } from 'react-redux';
 import { getOnboardingInitiator } from '../../../selectors';
-import { setCompletedOnboarding } from '../../../store/actions';
+import {
+  setCompletedOnboarding,
+  setNativeCurrency,
+} from '../../../store/actions';
 import EndOfFlow from './end-of-flow.component';
 
 const firstTimeFlowTypeNameMap = {
@@ -22,6 +25,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     setCompletedOnboarding: () => dispatch(setCompletedOnboarding()),
+    setNativeCurrency: () => dispatch(setNativeCurrency()),
   };
 };
 
