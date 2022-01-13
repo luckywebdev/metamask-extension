@@ -208,11 +208,12 @@ export default class SettingsTab extends PureComponent {
   }
 
   render() {
+    // eslint-disable-next-line no-unused-vars
     const { warning } = this.props;
 
     return (
       <div className="settings-page__body">
-        {warning ? <div className="settings-tab__error">{warning}</div> : null}
+        {/* {warning ? <div className="settings-tab__error">{warning}</div> : null} */}
         {this.renderCurrentConversion()}
         {this.renderUsePrimaryCurrencyOptions()}
         {this.renderCurrentLocale()}

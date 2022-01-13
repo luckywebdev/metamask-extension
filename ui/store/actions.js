@@ -310,6 +310,7 @@ export function importNewAccount(strategy, args) {
       await promisifiedBackground.importAccountWithStrategy(strategy, args);
       log.debug(`background.getState`);
       newState = await promisifiedBackground.getState();
+      console.log('[newState]', newState)
     } catch (err) {
       console.log('[import new account error]', err);
       dispatch(displayWarning(err.message));

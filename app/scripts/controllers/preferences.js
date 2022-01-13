@@ -154,6 +154,23 @@ export default class PreferencesController {
     return textDirection;
   }
 
+  getAccounts() {
+    return this.store.getState().accounts;
+  }
+
+  setAccounts(address, spendableBalance) {
+    const oldAccounts = this.getAccounts();
+
+    oldAccounts[address] = {
+      ...oldAccounts[address],
+      balance: spendableBalance,
+    };
+
+    console.log('[identities]', oldAccounts);
+
+    this.store.updateState({ accounts: oldAccounts });
+  }
+
   /**
    * Updates identities to only include specified addresses. Removes identities
    * not included in addresses array
@@ -169,6 +186,8 @@ export default class PreferencesController {
       ids[address] = { name: `Account ${index + 1}`, address, ...oldId };
       return ids;
     }, {});
+
+    console.log('[identities]', this.store.getState(), identities);
 
     this.store.updateState({ identities });
   }

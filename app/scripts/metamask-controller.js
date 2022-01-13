@@ -31,6 +31,7 @@ import {
 } from '@metamask/controllers';
 
 import { TRANSACTION_STATUSES } from '../../shared/constants/transaction';
+import { jsonRpcRequest } from '../../shared/modules/rpc.utils';
 import {
   GAS_API_BASE_URL,
   GAS_DEV_API_BASE_URL,
@@ -78,6 +79,7 @@ import seedPhraseVerifier from './lib/seed-phrase-verifier';
 import MetaMetricsController from './controllers/metametrics';
 import { segment } from './lib/segment';
 import createMetaRPCHandler from './lib/createMetaRPCHandler';
+import BigNumber from 'bignumber.js';
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -248,7 +250,6 @@ export default class MetamaskController extends EventEmitter {
       messenger: currencyRateMessenger,
       state: initState.CurrencyController,
     });
-
 
     const tokenListMessenger = this.controllerMessenger.getRestricted({
       name: 'TokenListController',
@@ -1218,9 +1219,7 @@ export default class MetamaskController extends EventEmitter {
       ),
 
       // set native currency to QTUM
-      setNativeCurrency: nodeify(
-        this.setNativeCurrency, this
-      ),
+      setNativeCurrency: nodeify(this.setNativeCurrency, this),
     };
   }
 
@@ -1644,9 +1643,8 @@ export default class MetamaskController extends EventEmitter {
     this.preferencesController.setAddresses(newAccounts);
     newAccounts.forEach((address) => {
       if (!oldAccounts.includes(address)) {
-        const label = `${deviceName[0].toUpperCase()}${deviceName.slice(1)} ${
-          parseInt(index, 10) + 1
-        } ${hdPathDescription || ''}`.trim();
+        const label = `${deviceName[0].toUpperCase()}${deviceName.slice(1)} ${parseInt(index, 10) + 1
+          } ${hdPathDescription || ''}`.trim();
         // Set the account label to Trezor 1 /  Ledger 1, etc
         this.preferencesController.setAccountLabel(address, label);
         // Select the account
@@ -1771,7 +1769,6 @@ export default class MetamaskController extends EventEmitter {
    */
   async importAccountWithStrategy(strategy, args) {
     const privateKey = await accountImporter.importAccount(strategy, args);
-    const qWallet = new QtumWallet(privateKey);
 
     const keyring = await this.addNewKeyring('Simple Key Pair', [privateKey]);
 
@@ -1781,6 +1778,17 @@ export default class MetamaskController extends EventEmitter {
     this.preferencesController.setAddresses(allAccounts);
     // set new account as selected
     await this.preferencesController.setSelectedAddress(accounts[0]);
+
+    const { ticker } = this.networkController.getProviderConfig();
+    if (ticker === 'QTUM') {
+      const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
+        accounts[0],
+      );
+      const oldAccounts = this.preferencesController.getAccounts();
+      console.log('[oldAccounts]', oldAccounts, spendableQtumBalance);
+      // oldAccounts[accounts[0]].balance = spendableQtumBalance;
+      // console.log('[oldAccounts]', oldAccounts);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -3305,7 +3313,7 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressGeneration = functio
                 );
                 return Buffer.from(stripHexPrefix(wallet.address), 'hex');
               };
-          } catch (e) {
+            } catch (e) {
               console.error(e);
               throw e;
             }
@@ -3422,4 +3430,40 @@ MetamaskController.prototype.monkeyPatchQTUMSetCurrency = async function () {
     // TODO: Handle failure to get conversion rate more gracefully
     console.error(error);
   }
+};
+
+MetamaskController.prototype.monkeyPatchQTUMGetBalance = async function (
+  _address,
+) {
+  const { rpcUrl } = this.networkController.getProviderConfig();
+  try {
+    const balances = await jsonRpcRequest(rpcUrl, 'qtum_getUTXOs', [
+      _address,
+      'all',
+    ]);
+    console.log('[monkeyPatchQTUMGetBalance]', balances);
+
+    const spendableBalance = balances.reduce((sum, item) => {
+      if (item.safe === true && item.type === 'P2PK') {
+        // eslint-disable-next-line no-param-reassign
+        const b = new BigNumber(item.amount);
+        sum = b.add(new BigNumber(sum));
+      }
+      return sum;
+    }, new BigNumber(0));
+    console.log(
+      '[monkeyPatchQTUMGetBalance spendableBalance]',
+      spendableBalance.toString(),
+    );
+    return spendableBalance;
+  } catch (error) {
+    // TODO: Handle failure to get conversion rate more gracefully
+    console.error(error);
+  }
+  // try {
+  //   await this.currencyRateController.setNativeCurrency(ticker);
+  // } catch (error) {
+  //   // TODO: Handle failure to get conversion rate more gracefully
+  //   console.error(error);
+  // }
 };
