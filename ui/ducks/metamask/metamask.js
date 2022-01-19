@@ -41,6 +41,7 @@ export default function reduceMetamask(state = {}, action) {
     nextNonce: null,
     conversionRate: null,
     nativeCurrency: 'QTUM',
+    qtumBalances: {},
     ...state,
   };
 
@@ -192,6 +193,13 @@ export default function reduceMetamask(state = {}, action) {
       };
     }
 
+    case actionConstants.UPDATE_QTUM_BALANCE: {
+      return {
+        ...metamaskState,
+        ...action.value,
+      }
+    }
+
     default:
       return metamaskState;
   }
@@ -339,4 +347,8 @@ export function getIsUnlocked(state) {
 
 export function getSeedPhraseBackedUp(state) {
   return state.metamask.seedPhraseBackedUp;
+}
+
+export function getQtumBalances(state) {
+  return state.metamask.qtumBalances; 
 }

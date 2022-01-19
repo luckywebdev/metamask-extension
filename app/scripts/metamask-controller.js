@@ -11,7 +11,7 @@ import createSubscriptionManager from 'eth-json-rpc-filters/subscriptionManager'
 import providerAsMiddleware from 'eth-json-rpc-middleware/providerAsMiddleware';
 import KeyringController from 'eth-keyring-controller';
 import { Mutex } from 'await-semaphore';
-import { stripHexPrefix } from 'ethereumjs-util';
+import { addHexPrefix, stripHexPrefix } from 'ethereumjs-util';
 import log from 'loglevel';
 import TrezorKeyring from 'eth-trezor-keyring';
 import LedgerBridgeKeyring from '@metamask/eth-ledger-bridge-keyring';
@@ -1254,6 +1254,16 @@ export default class MetamaskController extends EventEmitter {
         const addresses = await this.keyringController.getAccounts();
         this.preferencesController.setAddresses(addresses);
         this.selectFirstIdentity();
+
+        const { ticker } = this.networkController.getProviderConfig();
+        if (ticker === 'QTUM') {
+          const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
+            accounts[0],
+          );
+          
+          await this.preferencesController.setQtumBalances(accounts[0], {spendableBalance: spendableQtumBalance});
+        }
+    
       }
       return vault;
     } finally {
@@ -1324,6 +1334,16 @@ export default class MetamaskController extends EventEmitter {
       // set new identities
       this.preferencesController.setAddresses(accounts);
       this.selectFirstIdentity();
+
+      const { ticker } = this.networkController.getProviderConfig();
+      if (ticker === 'QTUM') {
+        const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
+          accounts[0],
+        );
+        
+        await this.preferencesController.setQtumBalances(accounts[0], {spendableBalance: spendableQtumBalance});
+      }
+  
       return vault;
     } finally {
       releaseLock();
@@ -1686,6 +1706,15 @@ export default class MetamaskController extends EventEmitter {
       }
     });
 
+    const { ticker } = this.networkController.getProviderConfig();
+    if (ticker === 'QTUM') {
+      const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
+        accounts[0],
+      );
+      
+      await this.preferencesController.setQtumBalances(accounts[0], {spendableBalance: spendableQtumBalance});
+    }
+
     const { identities } = this.preferencesController.store.getState();
     return { ...keyState, identities };
   }
@@ -1784,10 +1813,8 @@ export default class MetamaskController extends EventEmitter {
       const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
         accounts[0],
       );
-      const oldAccounts = this.preferencesController.getAccounts();
-      console.log('[oldAccounts]', oldAccounts, spendableQtumBalance);
-      // oldAccounts[accounts[0]].balance = spendableQtumBalance;
-      // console.log('[oldAccounts]', oldAccounts);
+
+      await this.preferencesController.setQtumBalances(accounts[0], {spendableBalance: spendableQtumBalance});
     }
   }
 
@@ -3450,20 +3477,12 @@ MetamaskController.prototype.monkeyPatchQTUMGetBalance = async function (
         sum = b.add(new BigNumber(sum));
       }
       return sum;
-    }, new BigNumber(0));
-    console.log(
-      '[monkeyPatchQTUMGetBalance spendableBalance]',
-      spendableBalance.toString(),
-    );
-    return spendableBalance;
+    }, 0);
+    const bigBalance = new BigNumber(spendableBalance).times(new BigNumber(10).pow(18));
+
+    return addHexPrefix(bigBalance.toString(16));
   } catch (error) {
     // TODO: Handle failure to get conversion rate more gracefully
     console.error(error);
   }
-  // try {
-  //   await this.currencyRateController.setNativeCurrency(ticker);
-  // } catch (error) {
-  //   // TODO: Handle failure to get conversion rate more gracefully
-  //   console.error(error);
-  // }
 };

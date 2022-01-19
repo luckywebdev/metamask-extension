@@ -27,6 +27,7 @@ export default class PreferencesController {
    */
   constructor(opts = {}) {
     const initState = {
+      qtumBalances: {},
       frequentRpcListDetail: [],
       useBlockie: false,
       useNonceField: false,
@@ -154,21 +155,19 @@ export default class PreferencesController {
     return textDirection;
   }
 
-  getAccounts() {
-    return this.store.getState().accounts;
+  getQtumBalances() {
+    return this.store.getState().qtumBalances;
   }
 
-  setAccounts(address, spendableBalance) {
-    const oldAccounts = this.getAccounts();
+  setQtumBalances(address, balances) {
+    const oldBalances = this.getQtumBalances();
 
-    oldAccounts[address] = {
-      ...oldAccounts[address],
-      balance: spendableBalance,
+    oldBalances[address] = {
+      ...oldBalances[address],
+      ...balances,
     };
 
-    console.log('[identities]', oldAccounts);
-
-    this.store.updateState({ accounts: oldAccounts });
+    this.store.updateState({ qtumBalances: oldBalances });
   }
 
   /**
@@ -186,8 +185,6 @@ export default class PreferencesController {
       ids[address] = { name: `Account ${index + 1}`, address, ...oldId };
       return ids;
     }, {});
-
-    console.log('[identities]', this.store.getState(), identities);
 
     this.store.updateState({ identities });
   }

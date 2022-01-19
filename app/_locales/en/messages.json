@@ -1173,6 +1173,9 @@
   "insufficientFunds": {
     "message": "Insufficient funds."
   },
+  "insufficientSpendableBalance": {
+    "message": "Your spendable balance is "
+  },
   "insufficientTokens": {
     "message": "Insufficient tokens."
   },
