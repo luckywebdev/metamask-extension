@@ -80,6 +80,7 @@ import MetaMetricsController from './controllers/metametrics';
 import { segment } from './lib/segment';
 import createMetaRPCHandler from './lib/createMetaRPCHandler';
 import BigNumber from 'bignumber.js';
+import qtum from "qtumjs-lib";
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -1343,7 +1344,8 @@ export default class MetamaskController extends EventEmitter {
         
         await this.preferencesController.setQtumBalances(accounts[0], {spendableBalance: spendableQtumBalance});
       }
-  
+      const base58Address = this.monkeyPatchGetQtumAddressFromHex(accounts[0]);
+      console.log('[qtum address]', base58Address);
       return vault;
     } finally {
       releaseLock();
@@ -1716,6 +1718,9 @@ export default class MetamaskController extends EventEmitter {
     }
 
     const { identities } = this.preferencesController.store.getState();
+
+    const base58Address = this.monkeyPatchGetQtumAddressFromHex(accounts[0]);
+    console.log('[qtum address]', base58Address);
     return { ...keyState, identities };
   }
 
@@ -3469,20 +3474,47 @@ MetamaskController.prototype.monkeyPatchQTUMGetBalance = async function (
       'all',
     ]);
     console.log('[monkeyPatchQTUMGetBalance]', balances);
-
-    const spendableBalance = balances.reduce((sum, item) => {
-      if (item.safe === true && item.type === 'P2PK') {
-        // eslint-disable-next-line no-param-reassign
-        const b = new BigNumber(item.amount);
-        sum = b.add(new BigNumber(sum));
-      }
-      return sum;
-    }, 0);
-    const bigBalance = new BigNumber(spendableBalance).times(new BigNumber(10).pow(18));
-
-    return addHexPrefix(bigBalance.toString(16));
+    if(balances) {
+      const spendableBalance = balances.reduce((sum, item) => {
+        if (item.safe === true && item.type === 'P2PK') {
+          // eslint-disable-next-line no-param-reassign
+          const b = new BigNumber(item.amount);
+          sum = b.add(new BigNumber(sum));
+        }
+        return sum;
+      }, 0);
+      const bigBalance = new BigNumber(spendableBalance).times(new BigNumber(10).pow(18));
+  
+      return addHexPrefix(bigBalance.toString(16));
+    } else {
+      return '0x00';
+    }
   } catch (error) {
     // TODO: Handle failure to get conversion rate more gracefully
     console.error(error);
   }
+};
+
+MetamaskController.prototype.monkeyPatchGetQtumAddressFromHex = async function (
+  _address,
+) {
+  // const { rpcUrl } = this.networkController.getProviderConfig();
+  // try {
+  //   const base58Address = await jsonRpcRequest(rpcUrl, 'fromhexaddress', [
+  //     _address
+  //   ]);
+  //   console.log('[monkeyPatchQTUMGetBase58Address]', base58Address);
+
+  //   return abase58Address;
+  // } catch (error) {
+  //   // TODO: Handle failure to get conversion rate more gracefully
+  //   console.error(error);
+  // }
+  // const parsed = isAddress(address)
+  // if (!parsed) {
+  //   return 'Invalid Address'
+  // }
+  console.log('[qtum network]', qtum.networks);
+  const hash = Buffer.from(_address.slice(2), 'hex')
+  return qtum.address.toBase58Check(hash, 58)
 };
