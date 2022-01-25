@@ -41,6 +41,7 @@ import {
   checkNetworkAndAccountSupports1559,
   getUseTokenDetection,
   getTokenList,
+  getAddressBookEntryOrAccountName,
 } from '../../selectors';
 import {
   disconnectGasFeeEstimatePoller,
@@ -1093,12 +1094,12 @@ const slice = createSlice({
       // uses the native currency and does not take into account the amount
       // being sent. If the user has enough to cover cost of gas but not gas
       // + amount then the error will be displayed on the amount field.
-      const  insufficientFunds = !isBalanceSufficient({
-          amount:
-            state.asset.type === ASSET_TYPES.NATIVE ? state.amount.value : '0x0',
-          balance: state.asset.type === ASSET_TYPES.NATIVE ? qtumBalances.spendableBalance : state.account.balance,
-          gasTotal: state.gas.gasTotal ?? '0x0',
-        });
+      const insufficientFunds = !isBalanceSufficient({
+        amount:
+          state.asset.type === ASSET_TYPES.NATIVE ? state.amount.value : '0x0',
+        balance: state.asset.type === ASSET_TYPES.NATIVE ? qtumBalances.spendableBalance : state.account.balance,
+        gasTotal: state.gas.gasTotal ?? '0x0',
+      });
 
       state.gas.error = insufficientFunds ? INSUFFICIENT_FUNDS_ERROR : null;
     },
@@ -1470,12 +1471,12 @@ export function useMyAccountsForRecipientSearch() {
 export function updateRecipient({ address, nickname }) {
   return async (dispatch, getState) => {
     const state = getState();
-    const nicknameFromAddressBook =
-      getAddressBookEntry(state, address)?.name ?? '';
+    const nicknameFromAddressBookEntryOrAccountName =
+      getAddressBookEntryOrAccountName(state, address) ?? '';
     await dispatch(
       actions.updateRecipient({
         address,
-        nickname: nickname || nicknameFromAddressBook,
+        nickname: nickname || nicknameFromAddressBookEntryOrAccountName,
       }),
     );
     await dispatch(computeEstimatedGasLimit());

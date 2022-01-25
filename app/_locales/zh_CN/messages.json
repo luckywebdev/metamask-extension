@@ -1,4 +1,46 @@
 {
+  "QRHardwareInvalidTransactionTitle": {
+    "message": "非法交易"
+  },
+  "QRHardwareMismatchedSignId": {
+    "message": "扫描的签名二维码不属于当前交易，请检查交易详情后重试。"
+  },
+  "QRHardwarePubkeyAccountOutOfRange": {
+    "message": "暂无更多账户，若想切换到其他账户，请在硬件钱包中选择想要的账户重新同步。"
+  },
+  "QRHardwareScanInstructions": {
+    "message": "为了保护您的隐私，屏幕是模糊的，但不影响对二维码的读取。"
+  },
+  "QRHardwareSignRequestCancel": {
+    "message": "拒绝该交易"
+  },
+  "QRHardwareSignRequestDescription": {
+    "message": "硬件钱包扫描上方二维码完成签名后，点击“获取签名”按钮扫描已签名的二维码"
+  },
+  "QRHardwareSignRequestGetSignature": {
+    "message": "获取签名"
+  },
+  "QRHardwareSignRequestSubtitle": {
+    "message": "用硬件钱包扫描二维码"
+  },
+  "QRHardwareSignRequestTitle": {
+    "message": "获取签名"
+  },
+  "QRHardwareUnknownQRCodeTitle": {
+    "message": "非法二维码"
+  },
+  "QRHardwareUnknownWalletQRCode": {
+    "message": "请扫描硬件钱包的同步二维码。"
+  },
+  "QRHardwareWalletImporterTitle": {
+    "message": "扫描二维码"
+  },
+  "QRHardwareWalletSteps1Description": {
+    "message": "该类硬件钱包通过二维码实现通讯交互，做到完全脱网。官方支持的钱包有："
+  },
+  "QRHardwareWalletSteps2Description": {
+    "message": "AirGap Vault & Ngrave (即将上线)"
+  },
   "about": {
     "message": "关于"
   },
@@ -103,10 +145,6 @@
   "allowExternalExtensionTo": {
     "message": "允许这个外部扩展到："
   },
-  "allowOriginSpendToken": {
-    "message": "允许 $1 使用您的 $2?",
-    "description": "$1 is the url of the site and $2 is the symbol of the token they are requesting to spend"
-  },
   "allowThisSiteTo": {
     "message": "允许本网站："
   },
@@ -116,9 +154,6 @@
   },
   "amount": {
     "message": "数额"
-  },
-  "amountWithColon": {
-    "message": "数额："
   },
   "appDescription": {
     "message": "以太坊浏览器插件",
@@ -405,9 +440,6 @@
   "customGasSubTitle": {
     "message": "提升费用可能会缩短处理时间，但不保证绝对有效。"
   },
-  "customRPC": {
-    "message": "自定义 RPC"
-  },
   "customSpendLimit": {
     "message": "自定义消费限额"
   },
@@ -442,9 +474,6 @@
   },
   "decryptRequest": {
     "message": "解密请求"
-  },
-  "defaultNetwork": {
-    "message": "默认以太坊（Ether）交易网络为主网。"
   },
   "delete": {
     "message": "删除"
@@ -516,7 +545,7 @@
     "message": "编辑权限"
   },
   "encryptionPublicKeyNotice": {
-    "message": "$1 希望得到您的加密公钥。同意后该网站将可以想您发送加密信息。",
+    "message": "$1 希望得到您的加密公钥。同意后该网站将可以向您发送加密信息。",
     "description": "$1 is the web3 site name"
   },
   "encryptionPublicKeyRequest": {
@@ -848,6 +877,12 @@
     "message": "JSON 文件",
     "description": "format for importing an account"
   },
+  "keystone": {
+    "message": "铠石钱包"
+  },
+  "keystoneTutorial": {
+    "message": " （使用教程）"
+  },
   "knownAddressRecipient": {
     "message": "已知接收方地址。"
   },
@@ -1004,9 +1039,6 @@
   "newContract": {
     "message": "新合约"
   },
-  "newNetwork": {
-    "message": "新增网络"
-  },
   "newPassword": {
     "message": "新密码（至少 8 个字符）"
   },
@@ -1086,12 +1118,6 @@
   },
   "onlyConnectTrust": {
     "message": "只连接您信任的网站。"
-  },
-  "optionalBlockExplorerUrl": {
-    "message": "区块浏览器 URL（选填）"
-  },
-  "optionalCurrencySymbol": {
-    "message": "符号（选填）"
   },
   "origin": {
     "message": "来源"
@@ -1321,9 +1347,6 @@
   },
   "selectAnAccount": {
     "message": "选择一个账户"
-  },
-  "selectAnAccountHelp": {
-    "message": "选择在 MetaMask 中查看的账户"
   },
   "selectEachPhrase": {
     "message": "请选择每个单词，以确保其正确性。"
@@ -1773,9 +1796,6 @@
     "message": "至：$1",
     "description": "$1 is the address to include in the To label. It is typically shortened first using shortenAddress"
   },
-  "toWithColon": {
-    "message": "至："
-  },
   "token": {
     "message": "代币"
   },
@@ -1846,10 +1866,6 @@
   "troubleTokenBalances": {
     "message": "我们无法加载您的代币余额。您可以查看它们",
     "description": "Followed by a link (here) to view token balances"
-  },
-  "trustSiteApprovePermission": {
-    "message": "您信任这个网站吗？授权即表示您允许 $1 提取您的 $2，并为您自动进行交易。",
-    "description": "$1 is the url requesting permission and $2 is the symbol of the currency that the request is for"
   },
   "tryAgain": {
     "message": "重试"

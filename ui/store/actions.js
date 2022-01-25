@@ -28,6 +28,11 @@ import { computeEstimatedGasLimit, resetSendState } from '../ducks/send';
 import { switchedToUnconnectedAccount } from '../ducks/alerts/unconnected-account';
 import { getUnconnectedAccountAlertEnabledness } from '../ducks/metamask/metamask';
 import { toChecksumHexAddress } from '../../shared/modules/hexstring-utils';
+import {
+  DEVICE_NAMES,
+  LEDGER_TRANSPORT_TYPES,
+  LEDGER_USB_VENDOR_ID,
+} from '../../shared/constants/hardware-wallets';
 import * as actionConstants from './actionConstants';
 
 let background = null;
@@ -396,15 +401,35 @@ export function forgetDevice(deviceName) {
   };
 }
 
-export function connectHardware(deviceName, page, hdPath) {
+export function connectHardware(deviceName, page, hdPath, t) {
   log.debug(`background.connectHardware`, deviceName, page, hdPath);
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    const { ledgerTransportType } = getState().metamask;
+
     dispatch(
       showLoadingIndication(`Looking for your ${capitalize(deviceName)}...`),
     );
 
     let accounts;
     try {
+      if (deviceName === 'ledger') {
+        await promisifiedBackground.establishLedgerTransportPreference();
+      }
+      if (
+        deviceName === DEVICE_NAMES.LEDGER &&
+        ledgerTransportType === LEDGER_TRANSPORT_TYPES.WEBHID
+      ) {
+        const connectedDevices = await window.navigator.hid.requestDevice({
+          filters: [{ vendorId: LEDGER_USB_VENDOR_ID }],
+        });
+        const userApprovedWebHidConnection = connectedDevices.some(
+          (device) => device.vendorId === Number(LEDGER_USB_VENDOR_ID),
+        );
+        if (!userApprovedWebHidConnection) {
+          throw new Error(t('ledgerWebHIDNotConnectedErrorMessage'));
+        }
+      }
+
       accounts = await promisifiedBackground.connectHardware(
         deviceName,
         page,
@@ -412,8 +437,18 @@ export function connectHardware(deviceName, page, hdPath) {
       );
     } catch (error) {
       log.error(error);
-      dispatch(displayWarning(error.message));
-      throw error;
+      if (
+        deviceName === 'ledger' &&
+        ledgerTransportType === LEDGER_TRANSPORT_TYPES.WEBHID &&
+        error.message.match('Failed to open the device')
+      ) {
+        dispatch(displayWarning(t('ledgerDeviceOpenFailureMessage')));
+        throw new Error(t('ledgerDeviceOpenFailureMessage'));
+      } else {
+        if (deviceName !== DEVICE_NAMES.QR)
+          dispatch(displayWarning(error.message));
+        throw error;
+      }
     } finally {
       dispatch(hideLoadingIndication());
     }
@@ -1291,6 +1326,116 @@ export function addToken(
   };
 }
 
+export function addCollectible(address, tokenID, dontShowLoadingIndicator) {
+  return async (dispatch) => {
+    if (!address) {
+      throw new Error('MetaMask - Cannot add collectible without address');
+    }
+    if (!tokenID) {
+      throw new Error('MetaMask - Cannot add collectible without tokenID');
+    }
+    if (!dontShowLoadingIndicator) {
+      dispatch(showLoadingIndication());
+    }
+    try {
+      await promisifiedBackground.addCollectible(address, tokenID);
+    } catch (error) {
+      log.error(error);
+      dispatch(displayWarning(error.message));
+    } finally {
+      await forceUpdateMetamaskState(dispatch);
+      dispatch(hideLoadingIndication());
+    }
+  };
+}
+
+export function addCollectibleVerifyOwnership(
+  address,
+  tokenID,
+  dontShowLoadingIndicator,
+) {
+  return async (dispatch) => {
+    if (!address) {
+      throw new Error('MetaMask - Cannot add collectible without address');
+    }
+    if (!tokenID) {
+      throw new Error('MetaMask - Cannot add collectible without tokenID');
+    }
+    if (!dontShowLoadingIndicator) {
+      dispatch(showLoadingIndication());
+    }
+    try {
+      await promisifiedBackground.addCollectibleVerifyOwnership(
+        address,
+        tokenID,
+      );
+    } catch (error) {
+      if (
+        error.message.includes('This collectible is not owned by the user') ||
+        error.message.includes('Unable to verify ownership.')
+      ) {
+        throw error;
+      } else {
+        log.error(error);
+        dispatch(displayWarning(error.message));
+      }
+    } finally {
+      await forceUpdateMetamaskState(dispatch);
+      dispatch(hideLoadingIndication());
+    }
+  };
+}
+
+export function removeAndIgnoreCollectible(
+  address,
+  tokenID,
+  dontShowLoadingIndicator,
+) {
+  return async (dispatch) => {
+    if (!address) {
+      throw new Error('MetaMask - Cannot ignore collectible without address');
+    }
+    if (!tokenID) {
+      throw new Error('MetaMask - Cannot ignore collectible without tokenID');
+    }
+    if (!dontShowLoadingIndicator) {
+      dispatch(showLoadingIndication());
+    }
+    try {
+      await promisifiedBackground.removeAndIgnoreCollectible(address, tokenID);
+    } catch (error) {
+      log.error(error);
+      dispatch(displayWarning(error.message));
+    } finally {
+      await forceUpdateMetamaskState(dispatch);
+      dispatch(hideLoadingIndication());
+    }
+  };
+}
+
+export function removeCollectible(address, tokenID, dontShowLoadingIndicator) {
+  return async (dispatch) => {
+    if (!address) {
+      throw new Error('MetaMask - Cannot remove collectible without address');
+    }
+    if (!tokenID) {
+      throw new Error('MetaMask - Cannot remove collectible without tokenID');
+    }
+    if (!dontShowLoadingIndicator) {
+      dispatch(showLoadingIndication());
+    }
+    try {
+      await promisifiedBackground.removeCollectible(address, tokenID);
+    } catch (error) {
+      log.error(error);
+      dispatch(displayWarning(error.message));
+    } finally {
+      await forceUpdateMetamaskState(dispatch);
+      dispatch(hideLoadingIndication());
+    }
+  };
+}
+
 export function removeToken(address) {
   return async (dispatch) => {
     dispatch(showLoadingIndication());
@@ -1352,12 +1497,6 @@ export function acceptWatchAsset(suggestedAssetID) {
       dispatch(hideLoadingIndication());
     }
     dispatch(closeCurrentNotificationWindow());
-  };
-}
-
-export function addKnownMethodData(fourBytePrefix, methodData) {
-  return () => {
-    background.addKnownMethodData(fourBytePrefix, methodData);
   };
 }
 
@@ -1943,6 +2082,10 @@ export function setShowFiatConversionOnTestnetsPreference(value) {
   return setPreference('showFiatInTestnets', value);
 }
 
+export function setShowTestNetworks(value) {
+  return setPreference('showTestNetworks', value);
+}
+
 export function setAutoLockTimeLimit(value) {
   return setPreference('autoLockTimeLimit', value);
 }
@@ -2071,6 +2214,32 @@ export function setUseTokenDetection(val) {
     dispatch(showLoadingIndication());
     log.debug(`background.setUseTokenDetection`);
     background.setUseTokenDetection(val, (err) => {
+      dispatch(hideLoadingIndication());
+      if (err) {
+        dispatch(displayWarning(err.message));
+      }
+    });
+  };
+}
+
+export function setUseCollectibleDetection(val) {
+  return (dispatch) => {
+    dispatch(showLoadingIndication());
+    log.debug(`background.setUseCollectibleDetection`);
+    background.setUseCollectibleDetection(val, (err) => {
+      dispatch(hideLoadingIndication());
+      if (err) {
+        dispatch(displayWarning(err.message));
+      }
+    });
+  };
+}
+
+export function setAdvancedGasFee(val) {
+  return (dispatch) => {
+    dispatch(showLoadingIndication());
+    log.debug(`background.setAdvancedGasFee`);
+    background.setAdvancedGasFee(val, (err) => {
       dispatch(hideLoadingIndication());
       if (err) {
         dispatch(displayWarning(err.message));
@@ -2385,19 +2554,6 @@ export function removePermissionsFor(domains) {
   };
 }
 
-/**
- * Clears all permissions for all domains.
- */
-export function clearPermissions() {
-  return (dispatch) => {
-    background.clearPermissions((err) => {
-      if (err) {
-        dispatch(displayWarning(err.message));
-      }
-    });
-  };
-}
-
 // Pending Approvals
 
 /**
@@ -2458,10 +2614,17 @@ export function setSelectedSettingsRpcUrl(newRpcUrl) {
   };
 }
 
-export function setNetworksTabAddMode(isInAddMode) {
+export function setNewNetworkAdded(newNetworkAdded) {
   return {
-    type: actionConstants.SET_NETWORKS_TAB_ADD_MODE,
-    value: isInAddMode,
+    type: actionConstants.SET_NEW_NETWORK_ADDED,
+    value: newNetworkAdded,
+  };
+}
+
+export function setNewCollectibleAddedMessage(newCollectibleAddedMessage) {
+  return {
+    type: actionConstants.SET_NEW_COLLECTIBLE_ADDED_MESSAGE,
+    value: newCollectibleAddedMessage,
   };
 }
 
@@ -2774,12 +2937,16 @@ export function getCurrentWindowTab() {
   };
 }
 
-export function setLedgerLivePreference(value) {
+export function setLedgerTransportPreference(value) {
   return async (dispatch) => {
     dispatch(showLoadingIndication());
-    await promisifiedBackground.setLedgerLivePreference(value);
+    await promisifiedBackground.setLedgerTransportPreference(value);
     dispatch(hideLoadingIndication());
   };
+}
+
+export async function attemptLedgerTransportCreation() {
+  return await promisifiedBackground.attemptLedgerTransportCreation();
 }
 
 export function captureSingleException(error) {
@@ -2908,4 +3075,35 @@ export async function setWeb3ShimUsageAlertDismissed(origin) {
 // DetectTokenController
 export async function detectNewTokens() {
   return promisifiedBackground.detectNewTokens();
+}
+
+export function hideTestNetMessage() {
+  return promisifiedBackground.setShowTestnetMessageInDropdown(false);
+}
+
+// QR Hardware Wallets
+export async function submitQRHardwareCryptoHDKey(cbor) {
+  await promisifiedBackground.submitQRHardwareCryptoHDKey(cbor);
+}
+
+export async function submitQRHardwareCryptoAccount(cbor) {
+  await promisifiedBackground.submitQRHardwareCryptoAccount(cbor);
+}
+
+export function cancelSyncQRHardware() {
+  return async (dispatch) => {
+    dispatch(hideLoadingIndication());
+    await promisifiedBackground.cancelSyncQRHardware();
+  };
+}
+
+export async function submitQRHardwareSignature(requestId, cbor) {
+  await promisifiedBackground.submitQRHardwareSignature(requestId, cbor);
+}
+
+export function cancelQRHardwareSignRequest() {
+  return async (dispatch) => {
+    dispatch(hideLoadingIndication());
+    await promisifiedBackground.cancelQRHardwareSignRequest();
+  };
 }

@@ -11,6 +11,7 @@ const ABOUT_US_ROUTE = '/settings/about-us';
 const ALERTS_ROUTE = '/settings/alerts';
 const NETWORKS_ROUTE = '/settings/networks';
 const NETWORKS_FORM_ROUTE = '/settings/networks/form';
+const ADD_NETWORK_ROUTE = '/settings/networks/add-network';
 const CONTACT_LIST_ROUTE = '/settings/contact-list';
 const CONTACT_EDIT_ROUTE = '/settings/contact-list/edit-contact';
 const CONTACT_ADD_ROUTE = '/settings/contact-list/add-contact';
@@ -37,6 +38,7 @@ const AWAITING_SIGNATURES_ROUTE = '/swaps/awaiting-signatures';
 const AWAITING_SWAP_ROUTE = '/swaps/awaiting-swap';
 const SWAPS_ERROR_ROUTE = '/swaps/swaps-error';
 const SWAPS_MAINTENANCE_ROUTE = '/swaps/maintenance';
+const ADD_COLLECTIBLE_ROUTE = '/add-collectible';
 
 const INITIALIZE_ROUTE = '/initialize';
 const INITIALIZE_WELCOME_ROUTE = '/initialize/welcome';
@@ -96,6 +98,7 @@ const PATH_NAME_MAP = {
   [ALERTS_ROUTE]: 'Alerts Settings Page',
   [NETWORKS_ROUTE]: 'Network Settings Page',
   [NETWORKS_FORM_ROUTE]: 'Network Settings Page Form',
+  [ADD_NETWORK_ROUTE]: 'Add Network From Settings Page Form',
   [CONTACT_LIST_ROUTE]: 'Contact List Settings Page',
   [`${CONTACT_EDIT_ROUTE}/:address`]: 'Edit Contact Settings Page',
   [CONTACT_ADD_ROUTE]: 'Add Contact Settings Page',
@@ -200,6 +203,7 @@ export {
   CONTACT_VIEW_ROUTE,
   NETWORKS_ROUTE,
   NETWORKS_FORM_ROUTE,
+  ADD_NETWORK_ROUTE,
   INITIALIZE_BACKUP_SEED_PHRASE_ROUTE,
   INITIALIZE_SEED_PHRASE_INTRO_ROUTE,
   CONNECT_ROUTE,
@@ -215,6 +219,7 @@ export {
   AWAITING_SIGNATURES_ROUTE,
   SWAPS_ERROR_ROUTE,
   SWAPS_MAINTENANCE_ROUTE,
+  ADD_COLLECTIBLE_ROUTE,
   ONBOARDING_ROUTE,
   ONBOARDING_HELP_US_IMPROVE_ROUTE,
   ONBOARDING_CREATE_PASSWORD_ROUTE,

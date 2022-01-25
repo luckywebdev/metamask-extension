@@ -1,4 +1,7 @@
 /** Please import your files in alphabetical order **/
+.hide-component {
+    display: none;
+}
 @import 'account-mismatch-warning/index';
 @import 'actionable-message/index';
 @import 'alert-circle-icon/index';
@@ -8,7 +11,6 @@
 @import 'button-group/index';
 @import 'button/buttons';
 @import 'callout/callout';
-@import 'card/index';
 @import 'check-box/index';
 @import 'chip/chip';
 @import 'circle-icon/index';
@@ -36,6 +38,7 @@
 @import 'loading-screen/index';
 @import 'menu/menu';
 @import 'numeric-input/numeric-input';
+@import 'nickname-popover/index';
 @import 'form-field/index';
 @import 'page-container/index';
 @import 'popover/index';
@@ -54,7 +57,4 @@
 @import 'typography/typography';
 @import 'unit-input/index';
 @import 'url-icon/index';
-
-.hide-component {
-    display: none;
-}
+@import 'update-nickname-popover/index';

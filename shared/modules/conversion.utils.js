@@ -247,6 +247,21 @@ const multiplyCurrencies = (a, b, options = {}) => {
   });
 };
 
+const divideCurrencies = (a, b, options = {}) => {
+  const { dividendBase, divisorBase, ...conversionOptions } = options;
+
+  if (!isValidBase(dividendBase) || !isValidBase(divisorBase)) {
+    throw new Error('Must specify valid dividendBase and divisorBase');
+  }
+
+  const value = getBigNumber(a, dividendBase).div(getBigNumber(b, divisorBase));
+
+  return converter({
+    value,
+    ...conversionOptions,
+  });
+};
+
 const conversionGreaterThan = ({ ...firstProps }, { ...secondProps }) => {
   const firstValue = converter({ ...firstProps });
   const secondValue = converter({ ...secondProps });
@@ -307,4 +322,7 @@ export {
   toNegative,
   subtractCurrencies,
   decGWEIToHexWEI,
+  toBigNumber,
+  toNormalizedDenomination,
+  divideCurrencies,
 };

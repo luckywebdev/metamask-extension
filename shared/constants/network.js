@@ -3,6 +3,7 @@ export const RINKEBY = 'rinkeby';
 export const KOVAN = 'kovan';
 export const MAINNET = 'mainnet';
 export const GOERLI = 'goerli';
+export const LOCALHOST = 'localhost';
 export const NETWORK_TYPE_RPC = 'rpc';
 export const QTUM_MAINNET = 'qtumMainnet';
 export const QTUM_TESTNET = 'qtumTestnet';
@@ -43,6 +44,7 @@ export const RINKEBY_DISPLAY_NAME = 'Rinkeby';
 export const KOVAN_DISPLAY_NAME = 'Kovan';
 export const MAINNET_DISPLAY_NAME = 'Ethereum Mainnet';
 export const GOERLI_DISPLAY_NAME = 'Goerli';
+export const LOCALHOST_DISPLAY_NAME = 'Localhost 8545';
 export const QTUM_MAINNET_DISPLAY_NAME = 'QTUM Mainnet';
 export const QTUM_TESTNET_DISPLAY_NAME = 'QTUM Testnet';
 export const QTUM_REGTEST_DISPLAY_NAME = 'QTUM Regtest';
@@ -56,6 +58,7 @@ export const RINKEBY_RPC_URL = getRpcUrl('rinkeby');
 export const KOVAN_RPC_URL = getRpcUrl('kovan');
 export const MAINNET_RPC_URL = getRpcUrl('mainnet');
 export const GOERLI_RPC_URL = getRpcUrl('goerli');
+export const LOCALHOST_RPC_URL = 'http://localhost:8545';
 export const QTUM_MAINNET_RPC_URL = `https://janus.qiswap.com/api/`;
 export const QTUM_TESTNET_RPC_URL = `https://testnet-janus.qiswap.com/api/`;
 export const QTUM_REGTEST_RPC_URL = `https://localhost:23889`;
@@ -81,6 +84,7 @@ export const TEST_CHAINS = [
   RINKEBY_CHAIN_ID,
   GOERLI_CHAIN_ID,
   KOVAN_CHAIN_ID,
+  LOCALHOST_CHAIN_ID,
 ];
 
 /**
@@ -92,6 +96,7 @@ export const NETWORK_TYPE_TO_ID_MAP = {
   [KOVAN]: { networkId: KOVAN_NETWORK_ID, chainId: KOVAN_CHAIN_ID },
   [GOERLI]: { networkId: GOERLI_NETWORK_ID, chainId: GOERLI_CHAIN_ID },
   [MAINNET]: { networkId: MAINNET_NETWORK_ID, chainId: MAINNET_CHAIN_ID },
+  [LOCALHOST]: { networkId: LOCALHOST_NETWORK_ID, chainId: LOCALHOST_CHAIN_ID },
   [QTUM_MAINNET]: { networkId: QTUM_MAINNET_NETWORK_ID, chainId: QTUM_MAINNET_CHAIN_ID },
   [QTUM_TESTNET]: { networkId: QTUM_TESTNET_NETWORK_ID, chainId: QTUM_TESTNET_CHAIN_ID },
   [QTUM_REGTEST]: { networkId: QTUM_REGTEST_NETWORK_ID, chainId: QTUM_REGTEST_CHAIN_ID },
@@ -103,18 +108,21 @@ export const NETWORK_TO_NAME_MAP = {
   [KOVAN]: KOVAN_DISPLAY_NAME,
   [MAINNET]: MAINNET_DISPLAY_NAME,
   [GOERLI]: GOERLI_DISPLAY_NAME,
+  [LOCALHOST]: LOCALHOST_DISPLAY_NAME,
 
   [ROPSTEN_NETWORK_ID]: ROPSTEN_DISPLAY_NAME,
   [RINKEBY_NETWORK_ID]: RINKEBY_DISPLAY_NAME,
   [KOVAN_NETWORK_ID]: KOVAN_DISPLAY_NAME,
   [GOERLI_NETWORK_ID]: GOERLI_DISPLAY_NAME,
   [MAINNET_NETWORK_ID]: MAINNET_DISPLAY_NAME,
+  [LOCALHOST_NETWORK_ID]: LOCALHOST_DISPLAY_NAME,
 
   [ROPSTEN_CHAIN_ID]: ROPSTEN_DISPLAY_NAME,
   [RINKEBY_CHAIN_ID]: RINKEBY_DISPLAY_NAME,
   [KOVAN_CHAIN_ID]: KOVAN_DISPLAY_NAME,
   [GOERLI_CHAIN_ID]: GOERLI_DISPLAY_NAME,
   [MAINNET_CHAIN_ID]: MAINNET_DISPLAY_NAME,
+  [LOCALHOST_CHAIN_ID]: LOCALHOST_DISPLAY_NAME,
 
   [QTUM_MAINNET]: QTUM_MAINNET_DISPLAY_NAME,
   [QTUM_TESTNET]: QTUM_TESTNET_DISPLAY_NAME,
@@ -142,6 +150,7 @@ export const CHAIN_ID_TO_RPC_URL_MAP = {
   [KOVAN_CHAIN_ID]: KOVAN_RPC_URL,
   [GOERLI_CHAIN_ID]: GOERLI_RPC_URL,
   [MAINNET_CHAIN_ID]: MAINNET_RPC_URL,
+  [LOCALHOST_CHAIN_ID]: LOCALHOST_RPC_URL,
   [QTUM_MAINNET_CHAIN_ID]: QTUM_MAINNET_RPC_URL,
   [QTUM_TESTNET_CHAIN_ID]: QTUM_TESTNET_RPC_URL,
   [QTUM_REGTEST_CHAIN_ID]: QTUM_REGTEST_RPC_URL,
@@ -189,3 +198,13 @@ export const CHAIN_ID_TO_GAS_LIMIT_BUFFER_MAP = {
   [OPTIMISM_CHAIN_ID]: 1,
   [OPTIMISM_TESTNET_CHAIN_ID]: 1,
 };
+
+/**
+ * Ethereum JSON-RPC methods that are known to exist but that we intentionally
+ * do not support.
+ */
+export const UNSUPPORTED_RPC_METHODS = new Set([
+  // This is implemented later in our middleware stack – specifically, in
+  // eth-json-rpc-middleware – but our UI does not support it.
+  'eth_signTransaction',
+]);

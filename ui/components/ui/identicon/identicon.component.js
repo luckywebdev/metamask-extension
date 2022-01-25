@@ -7,7 +7,7 @@ import BlockieIdenticon from './blockieIdenticon';
 const getStyles = (diameter) => ({
   height: diameter,
   width: diameter,
-  borderRadius: diameter / 2,
+  // borderRadius: diameter / 2,
 });
 
 export default class Identicon extends PureComponent {
