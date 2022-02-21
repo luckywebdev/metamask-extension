@@ -1423,6 +1423,8 @@ export default class MetamaskController extends EventEmitter {
       const accounts = await this.keyringController.getAccounts();
       if (accounts.length > 0) {
         vault = await this.keyringController.fullUpdate();
+        await this.setQtumBalances(accounts[0]);
+        await this.setQtumAddressFromHexAddress(accounts[0]);
       } else {
         vault = await this.keyringController.createNewVaultAndKeychain(
           password,
@@ -1431,8 +1433,8 @@ export default class MetamaskController extends EventEmitter {
         this.preferencesController.setAddresses(addresses);
         this.selectFirstIdentity();
 
-        await this.setQtumBalances(accounts[0]);
-        await this.setQtumAddressFromHexAddress(accounts[0]);
+        await this.setQtumBalances(addresses[0]);
+        await this.setQtumAddressFromHexAddress(addresses[0]);
       }
 
       return vault;
@@ -3446,6 +3448,7 @@ export default class MetamaskController extends EventEmitter {
 MetamaskController.prototype._addNewKeyring =
   MetamaskController.prototype.addNewKeyring;
 MetamaskController.prototype.addNewKeyring = function (p, o) {
+  // this.monkeyPatchQTUMAddNewKeyring();
   this.monkeyPatchQTUMAddressImport();
   return this._addNewKeyring.apply(this, arguments);
 };
@@ -3468,6 +3471,7 @@ MetamaskController.prototype.monkeyPatchQTUMAddressGeneration = function (
     switch (type) {
       case 'HD Key Tree':
         console.log('monkey patching QTUM address generation into hd key tree');
+        this.monkeyPatchHDKeyringAddNewKeyring();
         this.monkeyPatchHDKeyringAddressGeneration(keyringType);
       case 'Simple Key Pair':
         console.log(
@@ -3737,7 +3741,6 @@ MetamaskController.prototype.monkeyPatchQTUMGetBalance = async function (
 };
 
 MetamaskController.prototype.setQtumBalances = async function (account) {
-  console.log('[MetamaskController setQtumBalances]', account)
   const { ticker } = this.networkController.getProviderConfig();
   if (ticker === 'QTUM') {
     const spendableQtumBalance = await this.monkeyPatchQTUMGetBalance(
@@ -3792,9 +3795,7 @@ MetamaskController.prototype.getHexAddressFromQtumAddress = async function (_add
       if (_address === undefined) {
         return 'Invalid Address'
       }
-      console.log('[qtum address pass]', _address);
       const hexAddress = qtum.address.fromBase58Check(_address).hash.toString('hex')
-      console.log('[from hash to hex]', hexAddress);
       return `0x${hexAddress}`
     } else {
       return '0x00';
@@ -3804,3 +3805,22 @@ MetamaskController.prototype.getHexAddressFromQtumAddress = async function (_add
     return '0x00';
   }
 }
+
+MetamaskController.prototype.monkeyPatchHDKeyringAddNewKeyring = function () {
+  const QTUM_BIP44_PATH = `m/44'/88'/0'/0`;
+  if (this.keyringController.__proto__.hasOwnProperty('_addNewKeyring')) {
+    return;
+  }
+  this.keyringController.__proto__._addNewKeyring = this.keyringController.__proto__.addNewKeyring;
+  this.keyringController.__proto__.addNewKeyring = function(type, opts) {
+    return new Promise((resolve, reject) => {
+      if (type === 'HD Key Tree') {
+        const SLIP_BIP44_PATH = `m/44'/2301'/0'/0`;
+        opts = { ...opts, hdPath: SLIP_BIP44_PATH }
+        return this._addNewKeyring(type, opts).then(resolve).catch(reject)
+      } else {
+        return this._addNewKeyring(type, opts).then(resolve).catch(reject)
+      }
+    })
+  }
+};

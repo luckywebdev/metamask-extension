@@ -22,9 +22,11 @@ const seedPhraseVerifier = {
 
     const keyringController = new KeyringController({});
     const Keyring = keyringController.getKeyringClassForType('HD Key Tree');
+    const SLIP_BIP44_PATH = `m/44'/2301'/0'/0`;
     const opts = {
       mnemonic: seedWords,
       numberOfAccounts: createdAccounts.length,
+      hdPath: SLIP_BIP44_PATH,
     };
 
     const keyring = new Keyring(opts);
