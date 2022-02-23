@@ -51,6 +51,7 @@ import SwapFailureIcon from './swap-failure-icon';
 import SwapSuccessIcon from './swap-success-icon';
 import QuotesTimeoutIcon from './quotes-timeout-icon';
 import ViewOnEtherScanLink from './view-on-ether-scan-link';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 export default function AwaitingSwap({
   swapComplete,
@@ -127,7 +128,7 @@ export default function AwaitingSwap({
     SWAPS_CHAINID_DEFAULT_BLOCK_EXPLORER_URL_MAP[chainId] ??
     null;
   const blockExplorerUrl = getBlockExplorerLink(
-    { hash: txHash, chainId },
+    { hash: stripHexPrefix(txHash), chainId },
     { blockExplorerUrl: baseNetworkUrl },
   );
 

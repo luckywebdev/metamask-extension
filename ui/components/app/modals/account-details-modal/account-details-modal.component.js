@@ -6,7 +6,7 @@ import AccountModalContainer from '../account-modal-container';
 import QrView from '../../../ui/qr-code';
 import EditableLabel from '../../../ui/editable-label';
 import Button from '../../../ui/button';
-import { getURLHostName } from '../../../../helpers/utils/util';
+import { getURLHostName, getQtumAddressFromHex } from '../../../../helpers/utils/util';
 import { isHardwareKeyring } from '../../../../helpers/utils/hardware';
 
 export default class AccountDetailsModal extends Component {
@@ -65,7 +65,7 @@ export default class AccountDetailsModal extends Component {
           type="secondary"
           className="account-details-modal__button"
           onClick={() => {
-            const accountLink = getAccountLink(address, chainId, rpcPrefs);
+            const accountLink = getAccountLink(getQtumAddressFromHex(address, chainId), chainId, rpcPrefs);
             this.context.trackEvent({
               category: 'Navigation',
               event: 'Clicked Block Explorer Link',

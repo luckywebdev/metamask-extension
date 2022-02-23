@@ -451,3 +451,8 @@ export function getHexAddressFromQtum(_address) {
   const hexAddress = qtum.address.fromBase58Check(_address).hash.toString('hex')
   return `0x${hexAddress}`
 }
+
+export function getQRCTokenTrackerLink(_tokenTrackerLink) {
+  const newLink = _tokenTrackerLink.replace(/token/g, 'qrc20');
+  return newLink;
+}

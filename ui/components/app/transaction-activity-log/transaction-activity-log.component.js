@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 import { getBlockExplorerLink } from '@metamask/etherscan-link';
 import {
@@ -35,7 +36,7 @@ export default class TransactionActivityLog extends PureComponent {
 
   handleActivityClick = (activity) => {
     const { rpcPrefs } = this.props;
-    const etherscanUrl = getBlockExplorerLink(activity, rpcPrefs);
+    const etherscanUrl = getBlockExplorerLink({ hash: stripHexPrefix(activity.hash), chainId: activity.chainId }, rpcPrefs);
 
     this.context.trackEvent({
       category: 'Transactions',

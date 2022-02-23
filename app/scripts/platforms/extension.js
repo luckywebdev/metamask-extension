@@ -1,4 +1,5 @@
 import extension from 'extensionizer';
+import { stripHexPrefix } from 'ethereumjs-util';
 import { getBlockExplorerLink } from '@metamask/etherscan-link';
 import { getEnvironmentType, checkForError } from '../lib/util';
 import { ENVIRONMENT_TYPE_BACKGROUND } from '../../../shared/constants/app';
@@ -233,7 +234,7 @@ export default class ExtensionPlatform {
   _showConfirmedTransaction(txMeta, rpcPrefs) {
     this._subscribeToNotificationClicked();
 
-    const url = getBlockExplorerLink(txMeta, rpcPrefs);
+    const url = getBlockExplorerLink({ hash: stripHexPrefix(txMeta.hash), chainId: txMeta.chainId }, rpcPrefs);
     const nonce = parseInt(txMeta.txParams.nonce, 16);
 
     const title = 'Confirmed transaction';

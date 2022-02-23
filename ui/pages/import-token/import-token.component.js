@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { getTokenTrackerLink } from '@metamask/etherscan-link';
 import {
   checkExistingAddresses,
+  getQRCTokenTrackerLink,
   getURLHostName,
 } from '../../helpers/utils/util';
 import { tokenInfoGetter } from '../../helpers/utils/token-util';
@@ -21,6 +22,7 @@ import { TYPOGRAPHY, FONT_WEIGHT } from '../../helpers/constants/design-system';
 import Button from '../../components/ui/button';
 import TokenSearch from './token-search';
 import TokenList from './token-list';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 const emptyAddr = '0x0000000000000000000000000000000000000000';
 
@@ -274,14 +276,15 @@ class ImportToken extends Component {
 
     const { chainId, rpcPrefs } = this.props;
     const blockExplorerTokenLink = getTokenTrackerLink(
-      customAddress,
+      stripHexPrefix(customAddress).toLowerCase(),
       chainId,
       null,
       null,
       { blockExplorerUrl: rpcPrefs?.blockExplorerUrl ?? null },
     );
+    const qrcTokenLink = getQRCTokenTrackerLink(blockExplorerTokenLink);
     const blockExplorerLabel = rpcPrefs?.blockExplorerUrl
-      ? getURLHostName(blockExplorerTokenLink)
+      ? getURLHostName(qrcTokenLink)
       : this.context.t('etherscan');
 
     return (
@@ -374,7 +377,7 @@ class ImportToken extends Component {
                       className="import-token__link"
                       rel="noopener noreferrer"
                       target="_blank"
-                      href={blockExplorerTokenLink}
+                      href={qrcTokenLink}
                     >
                       {blockExplorerLabel}
                     </Button>,

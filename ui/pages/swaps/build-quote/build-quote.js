@@ -52,6 +52,7 @@ import {
 } from '../../../helpers/utils/conversions.util';
 import { calcTokenAmount } from '../../../helpers/utils/token-util';
 import {
+  getQRCTokenTrackerLink,
   getURLHostName,
   isEqualCaseInsensitive,
 } from '../../../helpers/utils/util';
@@ -82,6 +83,7 @@ import {
   shouldEnableDirectWrapping,
 } from '../swaps.util';
 import SwapsFooter from '../swaps-footer';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 const fuseSearchKeys = [
   { name: 'name', weight: 0.499 },
@@ -262,7 +264,7 @@ export default function BuildQuote({
   };
 
   const blockExplorerTokenLink = getTokenTrackerLink(
-    selectedToToken.address,
+    stripHexPrefix(selectedToToken.address).toLowerCase(),
     chainId,
     null, // no networkId
     null, // no holderAddress
@@ -274,8 +276,10 @@ export default function BuildQuote({
     },
   );
 
+  const qrcTokenTrackerLink = getQRCTokenTrackerLink(blockExplorerTokenLink);
+
   const blockExplorerLabel = rpcPrefs.blockExplorerUrl
-    ? getURLHostName(blockExplorerTokenLink)
+    ? getURLHostName(qrcTokenTrackerLink)
     : t('etherscan');
 
   const blockExplorerLinkClickedEvent = useNewMetricEvent({
@@ -284,7 +288,7 @@ export default function BuildQuote({
     properties: {
       link_type: 'Token Tracker',
       action: 'Swaps Confirmation',
-      block_explorer_domain: getURLHostName(blockExplorerTokenLink),
+      block_explorer_domain: getURLHostName(qrcTokenTrackerLink),
     },
   });
 
@@ -381,7 +385,7 @@ export default function BuildQuote({
         onClick={() => {
           blockExplorerLinkClickedEvent();
           global.platform.openTab({
-            url: blockExplorerTokenLink,
+            url: qrcTokenTrackerLink,
           });
         }}
         target="_blank"
@@ -393,7 +397,7 @@ export default function BuildQuote({
   };
 
   let tokenVerificationDescription = '';
-  if (blockExplorerTokenLink) {
+  if (qrcTokenTrackerLink) {
     if (occurrences === 1) {
       tokenVerificationDescription = t('verifyThisTokenOn', [
         <BlockExplorerLink key="block-explorer-link" />,
@@ -599,7 +603,7 @@ export default function BuildQuote({
               }
               withRightButton
               infoTooltipText={
-                blockExplorerTokenLink &&
+                qrcTokenTrackerLink &&
                 t('swapVerifyTokenExplanation', [blockExplorerLabel])
               }
             />
@@ -611,7 +615,7 @@ export default function BuildQuote({
               >
                 {t('swapTokenVerificationSources', [occurrences])}
               </span>
-              {blockExplorerTokenLink && (
+              {qrcTokenTrackerLink && (
                 <>
                   {t('swapTokenVerificationMessage', [
                     <a
@@ -620,7 +624,7 @@ export default function BuildQuote({
                       onClick={() => {
                         blockExplorerLinkClickedEvent();
                         global.platform.openTab({
-                          url: blockExplorerTokenLink,
+                          url: qrcTokenTrackerLink,
                         });
                       }}
                       target="_blank"

@@ -4,7 +4,7 @@ import classnames from 'classnames';
 import copyToClipboard from 'copy-to-clipboard';
 import { getTokenTrackerLink, getAccountLink } from '@metamask/etherscan-link';
 import UrlIcon from '../../../components/ui/url-icon';
-import { addressSummary, getURLHostName } from '../../../helpers/utils/util';
+import { addressSummary, getQRCTokenTrackerLink, getQtumAddressFromHex, getURLHostName } from '../../../helpers/utils/util';
 import { formatCurrency } from '../../../helpers/utils/confirm-tx.util';
 import { isBeta } from '../../../helpers/utils/build-types';
 import { ellipsify } from '../../send/send.utils';
@@ -26,6 +26,7 @@ import {
 import { SECOND } from '../../../../shared/constants/time';
 import { ConfirmPageContainerWarning } from '../../../components/app/confirm-page-container/confirm-page-container-content';
 import LedgerInstructionField from '../../../components/app/ledger-instruction-field';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 export default class ConfirmApproveContent extends Component {
   static contextTypes = {
@@ -401,11 +402,11 @@ export default class ConfirmApproveContent extends Component {
               className="confirm-approve-content__etherscan-link"
               onClick={() => {
                 const blockExplorerTokenLink = isContract
-                  ? getTokenTrackerLink(toAddress, chainId, null, null, {
+                  ? getQRCTokenTrackerLink(getTokenTrackerLink(stripHexPrefix(toAddress).toLowerCase(), chainId, null, null, {
                       blockExplorerUrl: rpcPrefs?.blockExplorerUrl ?? null,
-                    })
+                    }))
                   : getAccountLink(
-                      toAddress,
+                      getQtumAddressFromHex(toAddress, chainId),
                       chainId,
                       { blockExplorerUrl: rpcPrefs?.blockExplorerUrl ?? null },
                       null,

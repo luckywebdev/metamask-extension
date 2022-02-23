@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import copyToClipboard from 'copy-to-clipboard';
 import { getBlockExplorerLink } from '@metamask/etherscan-link';
+import { stripHexPrefix } from 'ethereumjs-util';
 import SenderToRecipient from '../../ui/sender-to-recipient';
 import { DEFAULT_VARIANT } from '../../ui/sender-to-recipient/sender-to-recipient.constants';
 import TransactionActivityLog from '../transaction-activity-log';
@@ -55,8 +56,9 @@ export default class TransactionListItemDetails extends PureComponent {
       transactionGroup: { primaryTransaction },
       rpcPrefs,
     } = this.props;
+    console.log('[stripHexPrefix]', stripHexPrefix(primaryTransaction.hash));
     const blockExplorerLink = getBlockExplorerLink(
-      primaryTransaction,
+      { hash: stripHexPrefix(primaryTransaction.hash), chainId: primaryTransaction.chainId},
       rpcPrefs,
     );
 

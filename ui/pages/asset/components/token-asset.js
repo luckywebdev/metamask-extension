@@ -11,12 +11,13 @@ import {
   getRpcPrefsForCurrentProvider,
 } from '../../../selectors/selectors';
 import { DEFAULT_ROUTE } from '../../../helpers/constants/routes';
-import { getURLHostName } from '../../../helpers/utils/util';
+import { getQRCTokenTrackerLink, getURLHostName } from '../../../helpers/utils/util';
 import { showModal } from '../../../store/actions';
 import { useNewMetricEvent } from '../../../hooks/useMetricEvent';
 
 import AssetNavigation from './asset-navigation';
 import AssetOptions from './asset-options';
+import { stripHexPrefix } from 'ethereumjs-util';
 
 export default function TokenAsset({ token }) {
   const dispatch = useDispatch();
@@ -27,12 +28,13 @@ export default function TokenAsset({ token }) {
   const selectedAddress = selectedIdentity.address;
   const history = useHistory();
   const tokenTrackerLink = getTokenTrackerLink(
-    token.address,
+    stripHexPrefix(token.address).toLowerCase(),
     chainId,
     null,
     selectedAddress,
     rpcPrefs,
   );
+  const qrcTokenTrackerLink = getQRCTokenTrackerLink(tokenTrackerLink);
 
   const blockExplorerLinkClickedEvent = useNewMetricEvent({
     category: 'Navigation',
@@ -40,7 +42,7 @@ export default function TokenAsset({ token }) {
     properties: {
       link_type: 'Token Tracker',
       action: 'Token Options',
-      block_explorer_domain: getURLHostName(tokenTrackerLink),
+      block_explorer_domain: getURLHostName(qrcTokenTrackerLink),
     },
   });
 
@@ -58,7 +60,7 @@ export default function TokenAsset({ token }) {
             isEthNetwork={!rpcPrefs.blockExplorerUrl}
             onClickBlockExplorer={() => {
               blockExplorerLinkClickedEvent();
-              global.platform.openTab({ url: tokenTrackerLink });
+              global.platform.openTab({ url: qrcTokenTrackerLink });
             }}
             onViewAccountDetails={() => {
               dispatch(showModal({ name: 'ACCOUNT_DETAILS' }));

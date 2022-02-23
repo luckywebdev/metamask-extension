@@ -6,7 +6,7 @@ import Button from '../../../components/ui/button';
 import Checkbox from '../../../components/ui/check-box';
 import Dropdown from '../../../components/ui/dropdown';
 
-import { getURLHostName } from '../../../helpers/utils/util';
+import { getQtumAddressFromHex, getURLHostName } from '../../../helpers/utils/util';
 
 class AccountList extends Component {
   state = {
@@ -127,7 +127,7 @@ class AccountList extends Component {
                 className="hw-account-list__item__link"
                 onClick={() => {
                   const accountLink = getAccountLink(
-                    account.address,
+                    getQtumAddressFromHex(account.address, chainId),
                     chainId,
                     rpcPrefs,
                   );
