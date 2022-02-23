@@ -6,7 +6,7 @@ import { getAccountLink } from '@metamask/etherscan-link';
 
 import { showModal } from '../../../store/actions';
 import { CONNECTED_ROUTE } from '../../../helpers/constants/routes';
-import { getURLHostName } from '../../../helpers/utils/util';
+import { getURLHostName, getQtumAddressFromHex } from '../../../helpers/utils/util';
 import { Menu, MenuItem } from '../../ui/menu';
 import {
   getCurrentChainId,
@@ -32,7 +32,7 @@ export default function AccountOptionsMenu({ anchorElement, onClose }) {
   const rpcPrefs = useSelector(getRpcPrefsForCurrentProvider);
   const selectedIdentity = useSelector(getSelectedIdentity);
   const { address } = selectedIdentity;
-  const addressLink = getAccountLink(address, chainId, rpcPrefs);
+  const addressLink = getAccountLink(getQtumAddressFromHex(address, chainId), chainId, rpcPrefs);
   const { blockExplorerUrl } = rpcPrefs;
   const blockExplorerUrlSubTitle = getURLHostName(blockExplorerUrl);
 
