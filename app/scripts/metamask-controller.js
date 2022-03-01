@@ -1763,6 +1763,8 @@ export default class MetamaskController extends EventEmitter {
     if (!keyring) {
       keyring = await this.addNewKeyring(keyringName);
     }
+    console.log('[getKeyringForDevice=====]', keyringName, keyring, hdPath, keyring.setHdPath);
+
     if (hdPath && keyring.setHdPath) {
       keyring.setHdPath(hdPath);
     }
@@ -1773,6 +1775,8 @@ export default class MetamaskController extends EventEmitter {
       const model = keyring.getModel();
       this.appStateController.setTrezorModel(model);
     }
+
+    console.log('[getKeyringForDevice=====1]', this.networkController.getProviderConfig());
 
     keyring.network = this.networkController.getProviderConfig().type;
 
@@ -1796,26 +1800,33 @@ export default class MetamaskController extends EventEmitter {
    */
   async connectHardware(deviceName, page, hdPath) {
     const keyring = await this.getKeyringForDevice(deviceName, hdPath);
+    console.log('[connectHardware keyring]', keyring)
     let accounts = [];
     switch (page) {
       case -1:
+        console.log('[connectHardware page -1]', page);
         accounts = await keyring.getPreviousPage();
         break;
       case 1:
+        console.log('[connectHardware page 1]', page);
         accounts = await keyring.getNextPage();
         break;
       default:
+        console.log('[connectHardware page]', page);
         accounts = await keyring.getFirstPage();
     }
+    console.log('[connectHardware accounts]', accounts);
 
     // Merge with existing accounts
     // and make sure addresses are not repeated
     const oldAccounts = await this.keyringController.getAccounts();
+    console.log('[connectHardware oldAccounts]', oldAccounts);
     const accountsToTrack = [
       ...new Set(
         oldAccounts.concat(accounts.map((a) => a.address.toLowerCase())),
       ),
     ];
+    console.log('[connectHardware accountsToTrack]', accountsToTrack);
     this.accountTracker.syncWithAddresses(accountsToTrack);
     return accounts;
   }
@@ -1866,10 +1877,14 @@ export default class MetamaskController extends EventEmitter {
   ) {
     const keyring = await this.getKeyringForDevice(deviceName, hdPath);
 
+    console.log('[unlockHardwareWalletAccount index]', index, deviceName, hdPath, hdPathDescription);
+
     keyring.setAccountToUnlock(index);
     const oldAccounts = await this.keyringController.getAccounts();
     const keyState = await this.keyringController.addNewAccount(keyring);
     const newAccounts = await this.keyringController.getAccounts();
+    console.log('[unlockHardwareWalletAccount index]', oldAccounts, keyState, newAccounts);
+
     this.preferencesController.setAddresses(newAccounts);
     newAccounts.forEach((address) => {
       if (!oldAccounts.includes(address)) {
@@ -3282,7 +3297,7 @@ export default class MetamaskController extends EventEmitter {
     const newValue = this.preferencesController.setLedgerTransportPreference(
       transportType,
     );
-
+    
     const keyring = await this.getKeyringForDevice('ledger');
     if (keyring?.updateTransportMethod) {
       return keyring.updateTransportMethod(newValue).catch((e) => {

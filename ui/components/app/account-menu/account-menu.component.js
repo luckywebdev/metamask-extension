@@ -376,8 +376,7 @@ export default class AccountMenu extends Component {
           }
           text={supportText}
         />
-        {/* <AccountMenuItem
-          className="hide-component"
+        <AccountMenuItem
           onClick={() => {
             toggleAccountMenu();
             metricsEvent({
@@ -395,13 +394,14 @@ export default class AccountMenu extends Component {
           }}
           icon={
             <img
-              className="account-menu__item-icon"
               src="images/connect-icon.svg"
               alt={t('connectHardwareWallet')}
+              width={40}
+              height={40}
             />
           }
           text={t('connectHardwareWallet')}
-        /> */}
+        />
         <AccountMenuItem
           onClick={() => {
             toggleAccountMenu();

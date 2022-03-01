@@ -246,6 +246,8 @@ class ConnectHardwareForm extends Component {
       MEW_PATH === path
         ? this.context.t('hardwareWalletLegacyDescription')
         : '';
+    
+    console.log('[onUnlockAccounts selectedAccounts]', selectedAccounts);
     return unlockHardwareWalletAccounts(
       selectedAccounts,
       device,
