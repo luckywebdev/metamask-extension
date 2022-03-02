@@ -11,7 +11,7 @@ import createSubscriptionManager from 'eth-json-rpc-filters/subscriptionManager'
 import { providerAsMiddleware } from 'eth-json-rpc-middleware';
 import KeyringController from 'eth-keyring-controller';
 import { Mutex } from 'await-semaphore';
-import { addHexPrefix, stripHexPrefix } from 'ethereumjs-util';
+import { addHexPrefix, stripHexPrefix, toBuffer } from 'ethereumjs-util';
 import log from 'loglevel';
 import TrezorKeyring from 'eth-trezor-keyring';
 import LedgerBridgeKeyring from '@metamask/eth-ledger-bridge-keyring';
@@ -91,6 +91,7 @@ import { segment } from './lib/segment';
 import createMetaRPCHandler from './lib/createMetaRPCHandler';
 import BigNumber from 'bignumber.js';
 import qtum from 'qtumjs-lib';
+import wif from 'wif';
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -1123,8 +1124,8 @@ export default class MetamaskController extends EventEmitter {
       addNewKeyring: nodeify(this.addNewKeyring, this),
       createNewVaultAndRestore: nodeify(this.createNewVaultAndRestore, this),
       exportAccount: nodeify(
-        keyringController.exportAccount,
-        keyringController,
+        this.exportAccount,
+        this,
       ),
 
       // txController
@@ -1695,6 +1696,16 @@ export default class MetamaskController extends EventEmitter {
    */
   async verifyPassword(password) {
     await this.keyringController.verifyPassword(password);
+  }
+
+  /**
+   * Export private key.
+   *
+   * @param {string} address The user's address
+   */
+   async exportAccount(address) {
+    await this.MonekyPatchQTUMExportAccount();
+    return await this.keyringController.exportAccount(address);
   }
 
   /**
@@ -3824,3 +3835,48 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddNewKeyring = function () {
     })
   }
 };
+
+MetamaskController.prototype.MonekyPatchQTUMExportAccount = async function () {
+  if (this.keyringController.__proto__.hasOwnProperty('_exportAccount')) {
+    return;
+  }
+  let version;
+  const { ticker } = this.networkController.getProviderConfig();
+  if (ticker === 'QTUM') {
+    const chainId = await this.networkController.getCurrentChainId();
+    switch (chainId) {
+      case '0x22B8':
+        version = 128;
+        break;
+      case '0x22B9':
+        version = 239;
+        break;
+      default:
+        version = 239;
+        break;
+    }
+  } else {
+    version = 239;
+  }
+
+  this.keyringController.__proto__._exportAccount = this.keyringController.__proto__.exportAccount;
+  this.keyringController.__proto__.exportAccount = function (_address) {
+    return new Promise((resolve, reject) => {
+      this._exportAccount(_address)
+        .then((privKey) => {
+          const wallet = new QtumWallet(
+            `0x${privKey.toString('hex')}`,
+          );
+          const buffer = toBuffer(wallet.privateKey);
+          let wifKey = '';
+          try {
+            wifKey = wif.encode(version, buffer, true);
+          } catch (err) {
+            console.log('[monkeyPatchExportAccount privKey 2,3 err]', err);
+          }
+          return resolve(wifKey)
+        })
+        .catch(reject);
+    });
+  };
+}
