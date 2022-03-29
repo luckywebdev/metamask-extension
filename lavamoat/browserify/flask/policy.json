@@ -313,9 +313,6 @@
       }
     },
     "@ethersproject/signing-key": {
-      "globals": {
-        "console.log": true
-      },
       "packages": {
         "@ethersproject/bytes": true,
         "@ethersproject/logger": true,
@@ -1029,8 +1026,6 @@
       "packages": {
         "bech32": true,
         "bigi": true,
-        "bip174": true,
-        "bip32": true,
         "bip66": true,
         "bitcoin-ops": true,
         "bs58check": true,
@@ -1043,7 +1038,6 @@
         "pushdata-bitcoin": true,
         "randombytes": true,
         "safe-buffer": true,
-        "tiny-secp256k1": true,
         "typeforce": true,
         "varuint-bitcoin": true,
         "wif": true
@@ -2137,7 +2131,6 @@
     "hash-base": {
       "packages": {
         "inherits": true,
-        "readable-stream": true,
         "safe-buffer": true,
         "stream-browserify": true
       }
@@ -3943,6 +3936,38 @@
     },
     "qtum-ethers-wrapper": {
       "globals": {
+        "setTimeout": true
+      },
+      "packages": {
+        "@ethersproject/abstract-provider": true,
+        "@ethersproject/abstract-signer": true,
+        "@ethersproject/address": true,
+        "@ethersproject/bytes": true,
+        "@ethersproject/hash": true,
+        "@ethersproject/hdnode": true,
+        "@ethersproject/json-wallets": true,
+        "@ethersproject/keccak256": true,
+        "@ethersproject/logger": true,
+        "@ethersproject/properties": true,
+        "@ethersproject/random": true,
+        "@ethersproject/signing-key": true,
+        "@ethersproject/transactions": true,
+        "bignumber.js": true,
+        "bip66": true,
+        "bitcoinjs-lib": true,
+        "bn.js": true,
+        "buffer": true,
+        "ethers": true,
+        "hash.js": true,
+        "secp256k1": true,
+        "timers-browserify": true,
+        "varuint-bitcoin": true,
+        "wif": true
+      }
+    },
+    "qtum-qnekt": {
+      "globals": {
+        "console.error": true,
         "console.log": true,
         "setTimeout": true
       },

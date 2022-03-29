@@ -722,6 +722,7 @@ const updateMetamaskStateFromBackground = () => {
 };
 
 export function updateTransaction(txData, dontShowLoadingIndicator) {
+  console.log('[updateTransaction send ui]', txData, dontShowLoadingIndicator)
   return async (dispatch) => {
     !dontShowLoadingIndicator && dispatch(showLoadingIndication());
 
@@ -749,7 +750,7 @@ export function updateTransaction(txData, dontShowLoadingIndicator) {
 }
 
 export function addUnapprovedTransaction(txParams, origin) {
-  log.debug('background.addUnapprovedTransaction');
+  log.debug('background.addUnapprovedTransaction',txParams, origin);
 
   return () => {
     return new Promise((resolve, reject) => {
@@ -765,10 +766,14 @@ export function addUnapprovedTransaction(txParams, origin) {
 }
 
 export function updateAndApproveTx(txData, dontShowLoadingIndicator) {
+  console.log('[updateAndApproveTx action 0]', txData)
   return (dispatch) => {
     !dontShowLoadingIndicator && dispatch(showLoadingIndication());
+    console.log('[updateAndApproveTx action 1]', txData)
     return new Promise((resolve, reject) => {
+      console.log('[updateAndApproveTx action 2]', txData)
       background.updateAndApproveTransaction(txData, (err) => {
+        console.log('[updateAndApproveTx action 3]', txData, err);
         dispatch(updateTransactionParams(txData.id, txData.txParams));
         dispatch(resetSendState());
 
@@ -1647,7 +1652,7 @@ export function updateProviderType(type) {
 export function updateAndSetCustomRpc(
   newRpc,
   chainId,
-  ticker = 'ETH',
+  ticker = 'QTUM',
   nickname,
   rpcPrefs,
 ) {
@@ -1681,7 +1686,7 @@ export function editRpc(
   oldRpc,
   newRpc,
   chainId,
-  ticker = 'ETH',
+  ticker = 'QTUM',
   nickname,
   rpcPrefs,
 ) {
@@ -1716,7 +1721,7 @@ export function editRpc(
   };
 }
 
-export function setRpcTarget(newRpc, chainId, ticker = 'ETH', nickname) {
+export function setRpcTarget(newRpc, chainId, ticker = 'QTUM', nickname) {
   return async (dispatch) => {
     log.debug(
       `background.setRpcTarget: ${newRpc} ${chainId} ${ticker} ${nickname}`,

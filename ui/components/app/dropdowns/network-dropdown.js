@@ -159,7 +159,7 @@ class NetworkDropdown extends Component {
     const reversedRpcListDetail = rpcListDetail.slice().reverse();
 
     return reversedRpcListDetail.map((entry) => {
-      const { rpcUrl, chainId, ticker = 'ETH', nickname = '' } = entry;
+      const { rpcUrl, chainId, ticker = 'QTUM', nickname = '' } = entry;
       const isCurrentRpcTarget =
         provider.type === NETWORK_TYPE_RPC && rpcUrl === provider.rpcUrl;
 

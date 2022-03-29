@@ -11,7 +11,7 @@ import createSubscriptionManager from 'eth-json-rpc-filters/subscriptionManager'
 import { providerAsMiddleware } from 'eth-json-rpc-middleware';
 import KeyringController from 'eth-keyring-controller';
 import { Mutex } from 'await-semaphore';
-import { addHexPrefix, stripHexPrefix } from 'ethereumjs-util';
+import { addHexPrefix, bufferToHex, stripHexPrefix } from 'ethereumjs-util';
 import log from 'loglevel';
 import TrezorKeyring from 'eth-trezor-keyring';
 import LedgerBridgeKeyring from '@metamask/eth-ledger-bridge-keyring';
@@ -44,14 +44,14 @@ import {
   GAS_DEV_API_BASE_URL,
   SWAPS_CLIENT_ID,
 } from '../../shared/constants/swaps';
-import { MAINNET_CHAIN_ID } from '../../shared/constants/network';
+import { MAINNET_CHAIN_ID, QTUM_LEDGER_BRIDGE_URL, QTUM_MAINNET_DOMAIN_URL, QTUM_TESTNET_DOMAIN_URL } from '../../shared/constants/network';
 import {
   DEVICE_NAMES,
   KEYRING_TYPES,
 } from '../../shared/constants/hardware-wallets';
 import { UI_NOTIFICATIONS } from '../../shared/notifications';
 import { toChecksumHexAddress } from '../../shared/modules/hexstring-utils';
-import { MILLISECOND } from '../../shared/constants/time';
+import { MILLISECOND, SECOND } from '../../shared/constants/time';
 import { POLLING_TOKEN_ENVIRONMENT_TYPES } from '../../shared/constants/app';
 
 import { hexToDecimal } from '../../ui/helpers/utils/conversions.util';
@@ -92,6 +92,8 @@ import createMetaRPCHandler from './lib/createMetaRPCHandler';
 import BigNumber from 'bignumber.js';
 import qtum from 'qtumjs-lib';
 import wif from 'wif';
+import getFetchWithTimeout from '../../shared/modules/fetch-with-timeout';
+import { TransactionFactory } from '@ethereumjs/tx';
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -537,6 +539,11 @@ export default class MetamaskController extends EventEmitter {
       signTransaction: this.keyringController.signTransaction.bind(
         this.keyringController,
       ),
+      getKeyringForAccount: this.keyringController.getKeyringForAccount.bind(
+        this.keyringController
+      ),
+      getQtumAddressFromHexAddress: this.getQtumAddressFromHexAddress.bind(this),
+      getQtumUTXOList: this.monkeyPatchQTUMGetUTXOList.bind(this),
       provider: this.provider,
       blockTracker: this.blockTracker,
       trackMetaMetricsEvent: this.metaMetricsController.trackEvent.bind(
@@ -1781,6 +1788,14 @@ export default class MetamaskController extends EventEmitter {
 
     keyring.network = this.networkController.getProviderConfig().type;
 
+    if (keyring.type === 'Ledger Hardware') {
+      keyring.bridgeUrl = QTUM_LEDGER_BRIDGE_URL;
+      await this.MonekyPatchLedgerGetPathForIndex(keyring);
+      await this.MonekyPatchCustomUnlockForLedger(keyring);
+      await this.MonekyPatchLedgerUnlockAccountByAddress(keyring);
+      await this.MonekyPatchLedgerSignTransaction(keyring);
+    }
+
     return keyring;
   }
 
@@ -1801,34 +1816,29 @@ export default class MetamaskController extends EventEmitter {
    */
   async connectHardware(deviceName, page, hdPath) {
     const keyring = await this.getKeyringForDevice(deviceName, hdPath);
-    console.log('[connectHardware keyring]', keyring)
     let accounts = [];
     switch (page) {
       case -1:
-        console.log('[connectHardware page -1]', page);
         accounts = await keyring.getPreviousPage();
         break;
       case 1:
-        console.log('[connectHardware page 1]', page);
         accounts = await keyring.getNextPage();
         break;
       default:
         await this.MonekyPatchQTUMGenerateLegerAccounts(keyring);
         accounts = await keyring.getFirstPage();
     }
-    console.log('[connectHardware]', accounts);
 
     // Merge with existing accounts
     // and make sure addresses are not repeated
     const oldAccounts = await this.keyringController.getAccounts();
-    console.log('[connectHardware oldAccounts]', oldAccounts);
     const accountsToTrack = [
       ...new Set(
         oldAccounts.concat(accounts.map((a) => a.address.toLowerCase())),
       ),
     ];
-    console.log('[connectHardware accountsToTrack]', accountsToTrack);
     this.accountTracker.syncWithAddresses(accountsToTrack);
+    console.log('[connectHardware accounts]', accounts);
     return accounts;
   }
 
@@ -2097,6 +2107,7 @@ export default class MetamaskController extends EventEmitter {
         msgParams,
       );
       const rawSig = await this.keyringController.signMessage(cleanMsgParams);
+      console.log('[signMessage rawSig]', rawSig)
       this.messageManager.setMsgStatusSigned(msgId, rawSig);
       return this.getState();
     } catch (error) {
@@ -3122,7 +3133,7 @@ export default class MetamaskController extends EventEmitter {
   async updateAndSetCustomRpc(
     rpcUrl,
     chainId,
-    ticker = 'ETH',
+    ticker = 'QTUM',
     nickname,
     rpcPrefs,
   ) {
@@ -3154,7 +3165,7 @@ export default class MetamaskController extends EventEmitter {
   async setCustomRpc(
     rpcUrl,
     chainId,
-    ticker = 'ETH',
+    ticker = 'QTUM',
     nickname = '',
     rpcPrefs = {},
   ) {
@@ -3887,7 +3898,6 @@ MetamaskController.prototype.MonekyPatchQTUMExportAccount = async function () {
 }
 
 MetamaskController.prototype.MonekyPatchQTUMGenerateLegerAccounts = async function (keyring) {
-  // const keyring = await this.getKeyringForDevice('ledger');
   console.log('[MonekyPatchQTUMGenerateLegerAccounts 0]', keyring);
   if (keyring.__proto__.hasOwnProperty('__addressFromIndex')) {
     return;
@@ -3901,7 +3911,7 @@ MetamaskController.prototype.MonekyPatchQTUMGenerateLegerAccounts = async functi
       console.log('[MonekyPatchQTUMGenerateLegerAccounts hdkey]', keyring.hdk, this.hdk, pathBase, i)
       // const hdKey = new HDKey();
       const dkey = this.hdk.derive(`${pathBase}/${i}`);
-      console.log('[MonekyPatchQTUMGenerateLegerAccounts 1-2]', dkey);
+      console.log('[MonekyPatchQTUMGenerateLegerAccounts 1-2]', dkey.publicKey.toString('hex'));
       address = computeAddressFromPublicKey(dkey.publicKey.toString('hex'));
       console.log('[MonekyPatchQTUMGenerateLegerAccounts 2]', address);
       return address;
@@ -3909,19 +3919,272 @@ MetamaskController.prototype.MonekyPatchQTUMGenerateLegerAccounts = async functi
       console.log('[MonekyPatchQTUMGenerateLegerAccounts error]', err);
       throw err;
     }
-    // return new Promise((resolve, reject) => {
-    //   this.__addressFromIndex(pathBase, i).then(() => {
-    //     let address = '';
-    //     try {
-    //       const dkey = keyring.hdkey.derive(`${pathBase}/${i}`);
-    //       address = computeAddressFromPublicKey(dkey.publicKey).toString('hex');
-    //       console.log('[MonekyPatchQTUMGenerateLegerAccounts 2]', address);
-    //       return resolve(address);
-    //     } catch (err) {
-    //       console.log('[MonekyPatchQTUMGenerateLegerAccounts error]', err);
-    //       reject(err);
-    //     }
-    //   })
-    // })
   }
 }
+
+MetamaskController.prototype.MonekyPatchCustomUnlockForLedger = async function (keyring) {
+  console.log('[MonekyPatchCustomUnlockForLedger 0]', keyring);
+  if (keyring.__proto__.hasOwnProperty('_unlock')) {
+    return;
+  }
+  console.log('[MonekyPatchCustomUnlockForLedger 0_1]', keyring);
+  const BIP44_PATH = `m/44'/88'/0'/0`;
+
+  keyring.__proto__._unlock = keyring.__proto__.unlock;
+  keyring.__proto__.unlock = function (hdPath = BIP44_PATH) {
+    console.log('[MonekyPatchCustomUnlockForLedger 1]', hdPath);
+    try {
+      this.hdPath = BIP44_PATH;
+      if (this.isUnlocked() && !hdPath) {
+        return Promise.resolve('already unlocked')
+      }
+      const path = hdPath ? this._toLedgerPath(hdPath) : this.hdPath
+      console.log('[MonekyPatchCustomUnlockForLedger 2]', path);
+      return new Promise((resolve, reject) => {
+        this._sendMessage({
+          action: 'ledger-unlock',
+          params: {
+            hdPath: path,
+          },
+        },
+        ({ success, payload }) => {
+          if (success) {
+            this.hdk.publicKey = Buffer.from(payload.publicKey, 'hex')
+            this.hdk.chainCode = Buffer.from(payload.chainCode, 'hex')
+            console.log('[MonekyPatchCustomUnlockForLedger 3]', payload, payload.publicKey.toString('hex'))
+            const address = computeAddressFromPublicKey(payload.publicKey.toString('hex'));
+            resolve(address)
+          } else {
+            reject(payload.error || new Error('Unknown error'))
+          }
+        })
+      })
+    } catch (err) {
+      console.log('[MonekyPatchCustomUnlockForLedger error]', err);
+      throw err;
+    }
+  }
+}
+
+MetamaskController.prototype.MonekyPatchLedgerUnlockAccountByAddress = async function (keyring) {
+  console.log('[MonekyPatchLedgerUnlockAccountByAddress 0]', keyring);
+  if (keyring.__proto__.hasOwnProperty('_unlockAccountByAddress')) {
+    return;
+  }
+  console.log('[MonekyPatchLedgerUnlockAccountByAddress 0_1]', keyring);
+
+  keyring.__proto__._unlockAccountByAddress = keyring.__proto__.unlockAccountByAddress;
+  keyring.__proto__.unlockAccountByAddress = async function (address) {
+    console.log('[MonekyPatchLedgerUnlockAccountByAddress 1]', address);
+    try {
+      const checksummedAddress = toChecksumHexAddress(address)
+      if (!Object.keys(this.accountDetails).includes(checksummedAddress)) {
+        throw new Error(`Ledger: Account for address '${checksummedAddress}' not found`)
+      }
+      console.log('[MonekyPatchLedgerUnlockAccountByAddress accountDetails]', this.accountDetails);
+      const { hdPath } = this.accountDetails[checksummedAddress]
+      return hdPath
+    } catch (err) {
+      console.log('[MonekyPatchLedgerUnlockAccountByAddress error]', err);
+      throw err;
+    }
+  }
+}
+
+
+MetamaskController.prototype.MonekyPatchLedgerGetPathForIndex = async function (keyring) {
+  console.log('[MonekyPatchLedgerGetPathForIndex 0]', keyring);
+  if (keyring.__proto__.hasOwnProperty('__getPathForIndex')) {
+    return;
+  }
+  console.log('[MonekyPatchLedgerGetPathForIndex 0_1]', keyring);
+
+  keyring.__proto__.__getPathForIndex = keyring.__proto__._getPathForIndex;
+  keyring.__proto__._getPathForIndex = function (index) {
+    console.log('[MonekyPatchLedgerGetPathForIndex 1]', index);
+    try {
+      return this._isLedgerLiveHdPath() ? `m/44'/60'/${index}'/0/0` : `m/44'/88'/0'/${index}`
+    } catch (err) {
+      console.log('[MonekyPatchLedgerGetPathForIndex error]', err);
+      throw err;
+    }
+  }
+}
+
+MetamaskController.prototype.MonekyPatchLedgerSignTransaction = async function (keyring) {
+  console.log('[MonekyPatchLedgerSignTransaction 0]', keyring);
+  if (keyring.__proto__.hasOwnProperty('_signTransactionQtum')) {
+    return;
+  }
+  console.log('[MonekyPatchLedgerSignTransaction 0_1]', keyring);
+
+  const getRawTxCache = this.monkeyPatchQTUMGetRawTxCache.bind(this);
+
+  keyring.__proto__._signTransactionQtum = keyring.__proto__.signTransaction;
+  keyring.__proto__.signTransaction = async function (address, tx) {
+    console.log('[MonekyPatchLedgerSignTransaction 1]', address, tx);
+    let rawTxHex;
+    if (typeof tx.getChainId === 'function') {
+      // In this version of ethereumjs-tx we must add the chainId in hex format
+      // to the initial v value. The chainId must be included in the serialized
+      // transaction which is only communicated to ethereumjs-tx in this
+      // value. In newer versions the chainId is communicated via the 'Common'
+      // object.
+      tx.v = bufferToHex(tx.getChainId())
+      tx.r = '0x00'
+      tx.s = '0x00'
+
+      rawTxHex = tx.serialize().toString('hex')
+
+      return this._signTransaction(address, rawTxHex, (payload) => {
+        tx.v = Buffer.from(payload.v, 'hex')
+        tx.r = Buffer.from(payload.r, 'hex')
+        tx.s = Buffer.from(payload.s, 'hex')
+        return tx
+      })
+    }
+    try {
+      const amount = 0
+      let fee = new BigNumber(tx.fee + 'e-9').toNumber()
+      console.log('[MonekyPatchLedgerSignTransaction 2-0]', tx.gasLimit, tx.gasPrice, fee.toString());
+      const selectUtxo = qtum.utils.selectTxs(tx.utxo, amount, fee)
+      const rawTxCache = {}
+      const rawTxList = [];
+      for(let i = 0; i < selectUtxo.length; i++) {
+        const item = selectUtxo[i]
+        if (!rawTxCache[item.hash]) {
+          rawTxCache[item.hash] = await getRawTxCache(item.hash);
+        }
+        rawTxList.push(rawTxCache[item.hash]);
+      }
+      console.log('[MonekyPatchLedgerSignTransaction 2-1]', selectUtxo, rawTxList);
+      const rawTx = {
+        ...tx,
+        selectUtxo,
+        rawTxList
+      }
+      console.log('[MonekyPatchLedgerSignTransaction 3]', rawTx);
+      return this._signTransaction(address, rawTx, (payload) => {
+        // Because tx will be immutable, first get a plain javascript object that
+        // represents the transaction. Using txData here as it aligns with the
+        // nomenclature of ethereumjs/tx.
+        const txData = tx.toJSON()
+        // The fromTxData utility expects a type to support transactions with a type other than 0
+        txData.type = tx.type
+        // The fromTxData utility expects v,r and s to be hex prefixed
+        txData.v = addHexPrefix(payload.v)
+        txData.r = addHexPrefix(payload.r)
+        txData.s = addHexPrefix(payload.s)
+        // Adopt the 'common' option from the original transaction and set the
+        // returned object to be frozen if the original is frozen.
+        return TransactionFactory.fromTxData(txData, { common: tx.common, freeze: Object.isFrozen(tx) })
+      })
+    } catch (err) {
+      console.log('[MonekyPatchLedgerSignTransaction error]', err);
+      throw err;
+    }
+  }
+}
+
+MetamaskController.prototype.monkeyPatchQTUMGetUTXOList = async function (
+  _address,
+) {
+
+  let qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+  const chainId = await this.networkController.getCurrentChainId();
+  switch (chainId) {
+    case '0x22B8':
+      qtumFetchBaseAPI = QTUM_MAINNET_DOMAIN_URL;
+      break;
+    case '0x22B9':
+      qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+      break;
+    default:
+      qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+      break;
+  }
+  const qtumFetchUTXOAPI = `${qtumFetchBaseAPI}address/${_address}/utxo`;
+  const fetchWithTimeout = getFetchWithTimeout(SECOND * 30);
+  console.log('[monkeyPatchQTUMGetUTXOList 0]', qtumFetchUTXOAPI)
+
+
+  try {
+    const response = await fetchWithTimeout(qtumFetchUTXOAPI, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    const parsedResponse = await response.json();
+    if (response.ok) {
+      console.log('[monkeyPatchQTUMGetUTXOList 1]', parsedResponse)
+      return parsedResponse.map(item => {
+        return {
+          address: item.address,
+          txid: item.transactionId,
+          confirmations: item.confirmations,
+          isStake: item.isStake,
+          amount: item.value,
+          value: item.value,
+          hash: item.transactionId,
+          pos: item.outputIndex
+        }
+      })
+    } else {
+      return [];
+    }
+
+
+  } catch (error) {
+    // TODO: Handle failure to get conversion rate more gracefully
+    console.error(error);
+  }
+};
+
+MetamaskController.prototype.monkeyPatchQTUMGetRawTxCache = async function (
+  _txId,
+) {
+
+  let qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+  const chainId = await this.networkController.getCurrentChainId();
+  switch (chainId) {
+    case '0x22B8':
+      qtumFetchBaseAPI = QTUM_MAINNET_DOMAIN_URL;
+      break;
+    case '0x22B9':
+      qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+      break;
+    default:
+      qtumFetchBaseAPI = QTUM_TESTNET_DOMAIN_URL;
+      break;
+  }
+  const qtumFetchRawTxAPI = `${qtumFetchBaseAPI}raw-tx/${_txId}`;
+  const fetchWithTimeout = getFetchWithTimeout(SECOND * 30);
+  console.log('[monkeyPatchQTUMGetRawTxCache 0]', qtumFetchRawTxAPI)
+
+
+  try {
+    const response = await fetchWithTimeout(qtumFetchRawTxAPI, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log('[monkeyPatchQTUMGetRawTxCache 1]', response)
+    // const parsedResponse = await response.json();
+    const parsedResponse = await response.text();
+    if (response.ok) {
+      console.log('[monkeyPatchQTUMGetRawTxCache 2]', parsedResponse)
+      return parsedResponse;
+    } else {
+      return [];
+    }
+
+
+  } catch (error) {
+    // TODO: Handle failure to get conversion rate more gracefully
+    console.log(error);
+  }
+};

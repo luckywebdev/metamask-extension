@@ -1,7 +1,9 @@
 import { QtumFunctionProvider, QtumWallet } from "qtum-ethers-wrapper"
+import { QtumLedger } from "qtum-qnekt"
+import qtum from 'qtumjs-lib';
 import EventEmitter from 'safe-event-emitter';
 import { ObservableStore } from '@metamask/obs-store';
-import { bufferToHex, keccak, toBuffer, isHexString } from 'ethereumjs-util';
+import { bufferToHex, keccak, toBuffer, isHexString, stripHexPrefix } from 'ethereumjs-util';
 import EthQuery from 'ethjs-query';
 import { ethErrors } from 'eth-rpc-errors';
 import abi from 'human-standard-token-abi';
@@ -49,6 +51,7 @@ import TransactionStateManager from './tx-state-manager';
 import TxGasUtil from './tx-gas-utils';
 import PendingTransactionTracker from './pending-tx-tracker';
 import * as txUtils from './lib/util';
+import { KEYRING_TYPES } from "../../../../shared/constants/hardware-wallets";
 
 const hstInterface = new ethers.utils.Interface(abi);
 
@@ -114,6 +117,9 @@ export default class TransactionController extends EventEmitter {
     this.getPermittedAccounts = opts.getPermittedAccounts;
     this.blockTracker = opts.blockTracker;
     this.signEthTx = opts.signTransaction;
+    this.getKeyringForAccount = opts.getKeyringForAccount;
+    this.getQtumAddressFromHexAddress = opts.getQtumAddressFromHexAddress;
+    this.getQtumUTXOList = opts.getQtumUTXOList;
     this.inProcessOfSigning = new Set();
     this._trackMetaMetricsEvent = opts.trackMetaMetricsEvent;
     this._getParticipateInMetrics = opts.getParticipateInMetrics;
@@ -280,12 +286,12 @@ export default class TransactionController extends EventEmitter {
     log.debug(
       `MetaMaskController newUnapprovedTransaction ${JSON.stringify(txParams)}`,
     );
-
+    console.log('[tx-controller newUnapprovedTransaction 0]', txParams, opts);
     const initialTxMeta = await this.addUnapprovedTransaction(
       txParams,
       opts.origin,
     );
-
+    console.log('[tx-controller newUnapprovedTransaction 1]', initialTxMeta);
     // listen for tx completion (success, fail)
     return new Promise((resolve, reject) => {
       this.txStateManager.once(
@@ -805,6 +811,7 @@ export default class TransactionController extends EventEmitter {
   @param {Object} txMeta - the updated txMeta
   */
   async updateTransaction(txMeta) {
+    console.log('[updateTransaction transaction controller]', txMeta);
     this.txStateManager.updateTransaction(
       txMeta,
       'confTx: user updated transaction',
@@ -816,10 +823,12 @@ export default class TransactionController extends EventEmitter {
   @param {Object} txMeta
   */
   async updateAndApproveTransaction(txMeta) {
+    console.log('[updateAndApproveTransaction]', txMeta);
     this.txStateManager.updateTransaction(
       txMeta,
       'confTx: user approved transaction',
     );
+    console.log('[updateAndApproveTransaction 2]', txMeta);
     await this.approveTransaction(txMeta.id);
   }
 
@@ -845,6 +854,7 @@ export default class TransactionController extends EventEmitter {
     try {
       // approve
       this.txStateManager.setTxStatusApproved(txId);
+      console.log('[approveTransaction]', txId);
       // get next nonce
       const txMeta = this.txStateManager.getTransaction(txId);
 
@@ -872,8 +882,10 @@ export default class TransactionController extends EventEmitter {
         txMeta,
         'transactions#approveTransaction',
       );
+      console.log('[approveTransaction 2]', txMeta);
       // sign transaction
       const rawTx = await this.signTransaction(txId);
+      console.log('[approveTransaction 3]', rawTx);
       await this.publishTransaction(txId, rawTx);
       this._trackTransactionMetricsEvent(txMeta, TRANSACTION_EVENTS.APPROVED);
       // must set transaction to submitted/failed before releasing lock
@@ -902,7 +914,9 @@ export default class TransactionController extends EventEmitter {
     @returns {string} rawTx
   */
   async signTransaction(txId) {
+    console.log('[tx-controller signTransaction 0]', txId);
     const txMeta = this.txStateManager.getTransaction(txId);
+    console.log('[tx-controller signTransaction 1]', txMeta);
     // add network/chain id
     const chainId = this.getChainId();
     const type = isEIP1559Transaction(txMeta)
@@ -914,11 +928,14 @@ export default class TransactionController extends EventEmitter {
       chainId,
       gasLimit: txMeta.txParams.gas,
     };
+    console.log('[tx-controller signTransaction 2]', chainId, type, txParams);
     // sign tx
     const fromAddress = txParams.from;
     const common = await this.getCommonConfiguration(txParams.from);
     const unsignedEthTx = TransactionFactory.fromTxData(txParams, { common });
+    console.log('[tx-controller signTransaction 3]', common, unsignedEthTx, fromAddress);
     const signedEthTx = await this.signEthTx(unsignedEthTx, fromAddress);
+    console.log('[tx-controller signTransaction 4]', fromAddress, common, unsignedEthTx, signedEthTx);
 
     // add r,s,v values for provider request purposes see createMetamaskMiddleware
     // and JSON rpc standard for further explanation
@@ -1510,6 +1527,8 @@ TransactionController.prototype.signTransaction = async function(txId) {
     return (result || {}).result;
   })
 
+  log.debug('[TransactionController overload signTransaction]', qtumProvider)
+
   const txMeta = this.txStateManager.getTransaction(txId);
   const chainId = this.getChainId();
   const txParams = {
@@ -1518,47 +1537,101 @@ TransactionController.prototype.signTransaction = async function(txId) {
     gasLimit: txMeta.txParams.gas,
   };
 
-  const fromAddress = txParams.from;
-  const unsignedEthTx = TransactionFactory.fromTxData(txParams);
 
-  const ethTx = {
-    ...unsignedEthTx,
-    chainId,
-    from: txParams.from,
-    to: txParams.to,
-    data: txParams.data,
-    nonce: unsignedEthTx.nonce.toString(),
-    gasLimit: unsignedEthTx.gasLimit.toString(),
-    gasPrice: unsignedEthTx.gasPrice.toString(),
-    value: unsignedEthTx.value.toString(),
-  }
+  const keyring = await this.getKeyringForAccount(txParams.from);
+  if (keyring.type === KEYRING_TYPES.LEDGER) {
+    const contractAddress = stripHexPrefix(txParams.to);
+    const qtumAddress = await this.getQtumAddressFromHexAddress(txParams.from);
+    const utxoList = await this.getQtumUTXOList(qtumAddress);
+    console.log('[TransactionController overload signTransaction 3-0]', contractAddress, qtumAddress, utxoList);
+    const unsignedEthTx = TransactionFactory.fromTxData(txParams);
 
-  let key = "";
-  await this.signEthTx({
-    sign: (privateKey) => {
-      key = privateKey.toString("hex");
-      if (!key.startsWith("0x")) {
-        key = "0x" + key
-      }
+
+    let ethTx = {
+      ...unsignedEthTx,
+      chainId,
+      from: txParams.from,
+      fromQtum: qtumAddress,
+      to: txParams.to,
+      data: txParams.data,
+      nonce: unsignedEthTx.nonce.toString(),
+      gasLimit: unsignedEthTx.gasLimit.toString(),
+      gasPrice: unsignedEthTx.gasPrice.toString(),
+      value: unsignedEthTx.value.toString(),
+      utxo: utxoList
     }
-  }, fromAddress)
+    console.log('[TransactionController overload signTransaction 3-1]', unsignedEthTx, ethTx);
+    const qtumeLedger = new QtumLedger(qtumProvider)
+    const [outPutTx, fee] = await qtumeLedger.signTransaction(ethTx)
+    ethTx = {
+      ...ethTx,
+      outPutTx,
+      fee,
+    }
+    console.log('[TransactionController overload signTransaction 3-2]', outPutTx, fee);
+    const signedEthTx = await this.signEthTx(ethTx, txParams.from);
+    console.log('[TransactionController overload signTransaction 3-3]', signedEthTx);
 
-  const qtumWallet = new QtumWallet(key, qtumProvider);
-  const signedEthTx = await qtumWallet.signTransaction(ethTx)
+    // add r,s,v values for provider request purposes see createMetamaskMiddleware
+    // and JSON rpc standard for further explanation
+    txMeta.r = bufferToHex(signedEthTx.r);
+    txMeta.s = bufferToHex(signedEthTx.s);
+    txMeta.v = bufferToHex(signedEthTx.v);
 
-  // add r,s,v values for provider request purposes see createMetamaskMiddleware
-  // and JSON rpc standard for further explanation
-  txMeta.r = bufferToHex(signedEthTx.r);
-  txMeta.s = bufferToHex(signedEthTx.s);
-  txMeta.v = bufferToHex(signedEthTx.v);
+    this.txStateManager.updateTransaction(
+      txMeta,
+      'transactions#signTransaction: add r, s, v values',
+    );
 
-  this.txStateManager.updateTransaction(
-    txMeta,
-    'transactions#signTransaction: add r, s, v values',
-  );
+    // set state to signed
+    this.txStateManager.setTxStatusSigned(txMeta.id);
+    const rawTx = bufferToHex(signedEthTx.serialize());
+    return rawTx;
+  } else {
+    const fromAddress = txParams.from;
+    const unsignedEthTx = TransactionFactory.fromTxData(txParams);
+    log.debug('[TransactionController overload signTransaction 1]', txMeta, txParams, unsignedEthTx);
 
-  // set state to signed
-  this.txStateManager.setTxStatusSigned(txMeta.id);
-  const rawTx = bufferToHex("0x" + signedEthTx);
-  return rawTx;
+    const ethTx = {
+      ...unsignedEthTx,
+      chainId,
+      from: txParams.from,
+      to: txParams.to,
+      data: txParams.data,
+      nonce: unsignedEthTx.nonce.toString(),
+      gasLimit: unsignedEthTx.gasLimit.toString(),
+      gasPrice: unsignedEthTx.gasPrice.toString(),
+      value: unsignedEthTx.value.toString(),
+    }
+    log.debug('[TransactionController overload signTransaction 2]', ethTx);
+  
+    let key = "";
+    await this.signEthTx({
+      sign: (privateKey) => {
+        key = privateKey.toString("hex");
+        if (!key.startsWith("0x")) {
+          key = "0x" + key
+        }
+      }
+    }, fromAddress)
+  
+    const qtumWallet = new QtumWallet(key, qtumProvider);
+    const signedEthTx = await qtumWallet.signTransaction(ethTx)
+    console.log('[TransactionController overload signTransaction 3-2]', qtumWallet, signedEthTx);
+    // add r,s,v values for provider request purposes see createMetamaskMiddleware
+    // and JSON rpc standard for further explanation
+    txMeta.r = bufferToHex(signedEthTx.r);
+    txMeta.s = bufferToHex(signedEthTx.s);
+    txMeta.v = bufferToHex(signedEthTx.v);
+  
+    this.txStateManager.updateTransaction(
+      txMeta,
+      'transactions#signTransaction: add r, s, v values',
+    );
+  
+    // set state to signed
+    this.txStateManager.setTxStatusSigned(txMeta.id);
+    const rawTx = bufferToHex("0x" + signedEthTx);
+    return rawTx;
+  }
 }

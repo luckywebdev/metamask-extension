@@ -263,6 +263,7 @@ export default class AccountTracker {
     accounts[address] = result;
     this.store.updateState({ accounts });
     await this.metamaskController.setQtumBalances(address);
+    await this.metamaskController.setQtumAddressFromHexAddress(address);
   }
 
   /**

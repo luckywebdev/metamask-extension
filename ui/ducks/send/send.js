@@ -1580,6 +1580,7 @@ export function signTransaction() {
           eip1559support ? eip1559OnlyTxParamsToUpdate : txParams,
         ),
       };
+      console.log('[signTransaction send SEND_STAGES_EDIT]', editingTx);
       dispatch(updateTransaction(editingTx));
     } else if (asset.type === ASSET_TYPES.TOKEN) {
       // When sending a token transaction we have to the token.transfer method
@@ -1594,6 +1595,7 @@ export function signTransaction() {
           to: undefined,
           data: undefined,
         });
+        console.log('[signTransaction send ASSET_TYPES.TOKEN]', token, asset, txParams);
         dispatch(showConfTxPage());
         dispatch(hideLoadingIndication());
       } catch (error) {

@@ -796,6 +796,7 @@ export default class ConfirmTransactionBase extends Component {
         })
 
         txData.txParams.value = satoshiValue;
+        console.log('[confirm-transaction-ui]', txData);
 
         sendTransaction(txData)
           .then(() => {

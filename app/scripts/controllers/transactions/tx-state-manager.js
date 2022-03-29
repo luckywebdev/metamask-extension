@@ -278,23 +278,30 @@ export default class TransactionStateManager extends EventEmitter {
    * @param {string} [note] - a note about the update for history
    */
   updateTransaction(txMeta, note) {
+    log.debug('[tx-state-manager updateTransaction 0]', txMeta, note);
     // normalize and validate txParams if present
     if (txMeta.txParams) {
       txMeta.txParams = normalizeAndValidateTxParams(txMeta.txParams, false);
     }
+    log.debug('[tx-state-manager updateTransaction 1]', txMeta, note);
 
     // create txMeta snapshot for history
     const currentState = snapshotFromTxMeta(txMeta);
+    log.debug('[tx-state-manager updateTransaction 2]', txMeta, currentState);
     // recover previous tx state obj
     const previousState = replayHistory(txMeta.history);
+    log.debug('[tx-state-manager updateTransaction 3]', txMeta, previousState);
     // generate history entry and add to history
     const entry = generateHistoryEntry(previousState, currentState, note);
+    log.debug('[tx-state-manager updateTransaction 4]', txMeta, entry);
     if (entry.length) {
       txMeta.history.push(entry);
+      log.debug('[tx-state-manager updateTransaction 5]', txMeta);
     }
 
     // commit txMeta to state
     const txId = txMeta.id;
+    log.debug('[tx-state-manager updateTransaction 6]', txMeta, txId);
     this.store.updateState({
       transactions: {
         ...this.store.getState().transactions,

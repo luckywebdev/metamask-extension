@@ -150,7 +150,7 @@ export function formatBalance(
   balance,
   decimalsToKeep,
   needsParse = true,
-  ticker = 'ETH',
+  ticker = 'QTUM',
 ) {
   const parsed = needsParse ? parseBalance(balance) : balance.split('.');
   const beforeDecimal = parsed[0];

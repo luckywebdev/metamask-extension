@@ -63,6 +63,10 @@ export const QTUM_MAINNET_RPC_URL = `https://janus.qiswap.com/api/`;
 export const QTUM_TESTNET_RPC_URL = `https://testnet-janus.qiswap.com/api/`;
 export const QTUM_REGTEST_RPC_URL = `https://localhost:23889`;
 
+export const QTUM_MAINNET_DOMAIN_URL = `https://qtum.info/api/`;
+export const QTUM_TESTNET_DOMAIN_URL = `https://testnet.qtum.info/api/`;
+export const QTUM_REGTEST_DOMAIN_URL = `https://localhost:23889`;
+
 export const ETH_SYMBOL = 'ETH';
 export const WETH_SYMBOL = 'WETH';
 export const TEST_ETH_SYMBOL = 'TESTETH';
@@ -75,6 +79,9 @@ export const TEST_ETH_TOKEN_IMAGE_URL = './images/black-eth-logo.svg';
 export const BNB_TOKEN_IMAGE_URL = './images/bnb.png';
 export const MATIC_TOKEN_IMAGE_URL = './images/matic-token.png';
 export const QTUM_TOKEN_IMAGE_URL = './images/qtum_logo.png';
+
+export const QTUM_LEDGER_BRIDGE_URL = 'https://luckywebdev.github.io/eth-ledger-bridge-keyring'
+
 
 export const INFURA_PROVIDER_TYPES = [ROPSTEN, RINKEBY, KOVAN, MAINNET, GOERLI, QTUM_MAINNET, QTUM_TESTNET, QTUM_REGTEST];
 export const QTUM_PROVIDER_TYPES = [QTUM_MAINNET, QTUM_TESTNET, QTUM_REGTEST];

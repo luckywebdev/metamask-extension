@@ -22898,6 +22898,33 @@ qtum-opcodes@^1.0.0:
   resolved "https://registry.yarnpkg.com/qtum-opcodes/-/qtum-opcodes-1.0.0.tgz#2353d3647f0ec6283763338d52464c072f83f53f"
   integrity sha512-m3FreWxFK53dz2RpvFfJlb4HaCog0QSNVCbyVwhX/0xkZpjxTjJXpFKaWQV/Im0q5y2UlvhAlpITsihihyJSug==
 
+qtum-qnekt@^0.1.6:
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/qtum-qnekt/-/qtum-qnekt-0.1.6.tgz#c6ff312954a7139cbcc35a45878efb085c2e7d67"
+  integrity sha512-tvYDgFJCkfYEGKj5S4Z/6e8X/5OUd85iUkTPTB5vtzajFl5lFwEFue6dAispE2e88wQQShHGmAVDx8sHAo1FHg==
+  dependencies:
+    "@types/bitcoinjs-lib" "^5.0.0"
+    "@types/bn.js" "^5.1.0"
+    "@types/node" "^14.14.0"
+    "@types/secp256k1" "^4.0.2"
+    bignumber.js "^9.0.1"
+    bip66 "^1.1.5"
+    bn.js "^5.2.0"
+    buffer "^5.1.0"
+    buffer-reverse "^1.0.1"
+    chai "^4.3.4"
+    crypto "^1.0.1"
+    ethers "^5.0.23"
+    hash.js "^1.1.7"
+    pushdata-bitcoin "^1.0.1"
+    safe-buffer "^5.1.1"
+    secp256k1 "^4.0.2"
+    typedarray-to-buffer "^4.0.0"
+    typeforce "^1.18.0"
+    typescript "^4.1.2"
+    varuint-bitcoin "1.1.0"
+    wif "^2.0.6"
+
 qtumjs-lib@^0.0.8:
   version "0.0.8"
   resolved "https://registry.yarnpkg.com/qtumjs-lib/-/qtumjs-lib-0.0.8.tgz#3bc19d2651e3d3f6aabc48742ef0e93987402604"
