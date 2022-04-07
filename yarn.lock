@@ -22898,10 +22898,10 @@ qtum-opcodes@^1.0.0:
   resolved "https://registry.yarnpkg.com/qtum-opcodes/-/qtum-opcodes-1.0.0.tgz#2353d3647f0ec6283763338d52464c072f83f53f"
   integrity sha512-m3FreWxFK53dz2RpvFfJlb4HaCog0QSNVCbyVwhX/0xkZpjxTjJXpFKaWQV/Im0q5y2UlvhAlpITsihihyJSug==
 
-qtum-qnekt@^0.1.6:
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/qtum-qnekt/-/qtum-qnekt-0.1.6.tgz#c6ff312954a7139cbcc35a45878efb085c2e7d67"
-  integrity sha512-tvYDgFJCkfYEGKj5S4Z/6e8X/5OUd85iUkTPTB5vtzajFl5lFwEFue6dAispE2e88wQQShHGmAVDx8sHAo1FHg==
+qtum-qnekt@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/qtum-qnekt/-/qtum-qnekt-0.1.7.tgz#d770f68f61e86810e9a85b0f4f9256759c198763"
+  integrity sha512-2QpyFYmaJ7UTS5Lx2czvmn3xCIY+6dAsrRlFmjkXJt6o5NcI5PXomwOsZD04aEAM9hoDVWYYMzpavQpsdubziw==
   dependencies:
     "@types/bitcoinjs-lib" "^5.0.0"
     "@types/bn.js" "^5.1.0"
