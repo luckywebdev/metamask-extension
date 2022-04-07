@@ -1789,7 +1789,6 @@ export default class MetamaskController extends EventEmitter {
     keyring.network = this.networkController.getProviderConfig().type;
 
     if (keyring.type === 'Ledger Hardware') {
-      keyring.bridgeUrl = QTUM_LEDGER_BRIDGE_URL;
       await this.MonekyPatchLedgerGetPathForIndex(keyring);
       await this.MonekyPatchCustomUnlockForLedger(keyring);
       await this.MonekyPatchLedgerUnlockAccountByAddress(keyring);
@@ -3843,9 +3842,10 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddNewKeyring = function () {
     return new Promise((resolve, reject) => {
       if (type === 'HD Key Tree') {
         const SLIP_BIP44_PATH = `m/44'/2301'/0'/0`;
-        opts = { ...opts, hdPath: SLIP_BIP44_PATH }
+        opts = { ...opts, hdPath: SLIP_BIP44_PATH, bridgeUrl: QTUM_LEDGER_BRIDGE_URL }
         return this._addNewKeyring(type, opts).then(resolve).catch(reject)
       } else {
+        opts = { ...opts, bridgeUrl: QTUM_LEDGER_BRIDGE_URL }
         return this._addNewKeyring(type, opts).then(resolve).catch(reject)
       }
     })
