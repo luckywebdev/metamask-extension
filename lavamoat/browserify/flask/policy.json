@@ -3965,10 +3965,11 @@
         "wif": true
       }
     },
-    "qtum-qnekt": {
+    "qtum-ethers-wrapper-beta": {
       "globals": {
         "console.error": true,
         "console.log": true,
+        "recoverPublicKey": true,
         "setTimeout": true
       },
       "packages": {
@@ -3984,6 +3985,7 @@
         "@ethersproject/properties": true,
         "@ethersproject/random": true,
         "@ethersproject/signing-key": true,
+        "@ethersproject/strings": true,
         "@ethersproject/transactions": true,
         "bignumber.js": true,
         "bip66": true,

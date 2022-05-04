@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { computeAddress, computeAddressFromPublicKey, QtumWallet } from 'qtum-ethers-wrapper';
+import { computeAddress, computeAddressFromPublicKey, QtumWallet } from 'qtum-ethers-wrapper-beta';
 import pump from 'pump';
 import { ObservableStore } from '@metamask/obs-store';
 import { storeAsStream } from '@metamask/obs-store/dist/asStream';
@@ -3844,8 +3844,10 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddNewKeyring = function () {
         const SLIP_BIP44_PATH = `m/44'/2301'/0'/0`;
         opts = { ...opts, hdPath: SLIP_BIP44_PATH, bridgeUrl: QTUM_LEDGER_BRIDGE_URL }
         return this._addNewKeyring(type, opts).then(resolve).catch(reject)
-      } else {
+      } else if (type === 'Ledger Hardware') {
         opts = { ...opts, bridgeUrl: QTUM_LEDGER_BRIDGE_URL }
+        return this._addNewKeyring(type, opts).then(resolve).catch(reject)
+      }else {
         return this._addNewKeyring(type, opts).then(resolve).catch(reject)
       }
     })

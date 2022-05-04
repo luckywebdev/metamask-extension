@@ -1,5 +1,5 @@
-import { QtumFunctionProvider, QtumWallet } from "qtum-ethers-wrapper"
-import { QtumLedger } from "qtum-qnekt"
+import { QtumFunctionProvider, QtumWallet, QtumLedger } from "qtum-ethers-wrapper-beta"
+// import { QtumLedger } from "qtum-qnekt"
 import qtum from 'qtumjs-lib';
 import EventEmitter from 'safe-event-emitter';
 import { ObservableStore } from '@metamask/obs-store';
@@ -1617,7 +1617,7 @@ TransactionController.prototype.signTransaction = async function(txId) {
   
     const qtumWallet = new QtumWallet(key, qtumProvider);
     const signedEthTx = await qtumWallet.signTransaction(ethTx)
-    console.log('[TransactionController overload signTransaction 3-2]', qtumWallet, signedEthTx);
+    console.log('[TransactionController overload signTransaction 3-2]', qtumWallet, signedEthTx, signedEthTx.r);
     // add r,s,v values for provider request purposes see createMetamaskMiddleware
     // and JSON rpc standard for further explanation
     txMeta.r = bufferToHex(signedEthTx.r);

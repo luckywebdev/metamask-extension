@@ -188,7 +188,8 @@
     "qrcode-generator": "1.4.1",
     "qrcode.react": "^1.0.1",
     "qtum-ethers-wrapper": "^0.1.5",
-    "qtum-qnekt": "^0.1.7",
+    "qtum-ethers-wrapper-beta": "^0.0.1",
+    "qtum-qnekt-ethers": "^0.0.4",
     "qtumjs-lib": "^0.0.8",
     "react": "^16.12.0",
     "react-dnd": "^3.0.2",
@@ -387,7 +388,7 @@
       "usb": false,
       "level": false,
       "@fortawesome/fontawesome-free": false,
-      "qtum-qnekt": true
+      "qtum-ethers-wrapper-beta": true
     }
   }
 }
