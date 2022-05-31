@@ -2630,7 +2630,7 @@ export default class MetamaskController extends EventEmitter {
     const mux = setupMultiplex(connectionStream);
 
     // messages between inpage and background
-    this.setupProviderConnection(mux.createStream('metamask-provider'), sender);
+    this.setupProviderConnection(mux.createStream('qnekt-provider'), sender);
 
     // TODO:LegacyProvider: Delete
     // legacy streams

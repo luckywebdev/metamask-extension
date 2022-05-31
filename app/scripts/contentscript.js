@@ -17,9 +17,9 @@ const inpageContent = fs.readFileSync(
 const inpageSuffix = `//# sourceURL=${extension.runtime.getURL('inpage.js')}\n`;
 const inpageBundle = inpageContent + inpageSuffix;
 
-const CONTENT_SCRIPT = 'metamask-contentscript';
-const INPAGE = 'metamask-inpage';
-const PROVIDER = 'metamask-provider';
+const CONTENT_SCRIPT = 'qnekt-contentscript';
+const INPAGE = 'qnekt-inpage';
+const PROVIDER = 'qnekt-provider';
 
 // TODO:LegacyProvider: Delete
 const LEGACY_CONTENT_SCRIPT = 'contentscript';
