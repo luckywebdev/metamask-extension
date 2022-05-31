@@ -45,12 +45,14 @@ log.setDefaultLevel(process.env.METAMASK_DEBUG ? 'debug' : 'warn');
 
 // setup background connection
 const metamaskStream = new WindowPostMessageStream({
-  name: 'metamask-inpage',
-  target: 'metamask-contentscript',
+  name: 'qnekt-inpage',
+  target: 'qnekt-contentscript',
 });
+const jsonRpcStreamName = 'qnekt-provider'
 
 const inPageProvider = initializeProvider({
   connectionStream: metamaskStream,
+  jsonRpcStreamName,
   logger: log,
   // since we are using the official metamask initializeProvider implementation
   // we need to not set the global provider as it will be a name collision with official Metamask
