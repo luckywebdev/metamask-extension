@@ -92,7 +92,7 @@ import createMetaRPCHandler from './lib/createMetaRPCHandler';
 import BigNumber from 'bignumber.js';
 import qtum from 'qtumjs-lib';
 import wif from 'wif';
-import { normalize } from 'eth-sig-util';
+import { typedSignatureHash, TypedDataUtils, normalize } from 'eth-sig-util';
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -2447,6 +2447,8 @@ export default class MetamaskController extends EventEmitter {
    */
   async signTypedMessage(msgParams) {
     log.info('MetaMaskController - eth_signTypedData');
+    console.log("MetaMaskController - eth_signTypedData");
+    this.monkeyPatchSimpleKeyringSignTypedMessage();
     const msgId = msgParams.metamaskId;
     const { version } = msgParams;
     try {
@@ -3779,7 +3781,7 @@ MetamaskController.prototype.monkeyPatchQTUMGetBalance = async function (
 
     if(balances) {
       const spendableBalance = balances.reduce((sum, item) => {
-        if (item.safe === true && item.type === 'P2PKH') {
+        if (item.safe === true && (item.type === 'P2PKH' || item.type === 'P2PK')) {
           // eslint-disable-next-line no-param-reassign
           const b = new BigNumber(item.amount);
           sum = b.add(new BigNumber(sum));
@@ -4085,4 +4087,56 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringSignPersonalMessage = funct
         return Promise.resolve('0x' + rawMsgSig.toString('hex'));
       });
   }
+}
+
+MetamaskController.prototype.monkeyPatchSimpleKeyringSignTypedMessage = function() {
+    if (this.keyringController.__proto__.hasOwnProperty('_signTypedData')) {
+      return;
+    }
+    this.keyringController.__proto__._signTypedData = true;
+
+    for (let i = 0; i < this.keyringController.keyrings.length; i++) {
+        const keyringType = this.keyringController.keyrings[i];
+        if (!keyringType['_signTypedData_v1'] && keyringType.__proto__.signTypedData_v1) {
+            keyringType.__proto__._signTypedData_v1 = keyringType.__proto__.signTypedData_v1;
+            keyringType.__proto__.signTypedData_v1 = async function(withAccount, typedData, opts = {}) {
+                const privKey = this.getPrivateKeyFor(withAccount, opts);
+                const hash = typedSignatureHash(typedData);
+                const wallet = new QtumWallet(
+                    `0x${privKey.toString('hex')}`,
+                    qtumWalletOpts,
+                );
+                const sig = await wallet.signHash(hash);
+                return sig.toString('hex');
+            }
+        }
+
+        if (!keyringType['_signTypedData_v3'] && keyringType.__proto__.signTypedData_v3) {
+            keyringType.__proto__._signTypedData_v3 = keyringType.__proto__.signTypedData_v3;
+            keyringType.__proto__.signTypedData_v3 = async function(withAccount, typedData, opts = {}) {
+                const privKey = this.getPrivateKeyFor(withAccount, opts);
+                const message = TypedDataUtils.sign(typedData, false);
+                const wallet = new QtumWallet(
+                    `0x${privKey.toString('hex')}`,
+                    qtumWalletOpts,
+                );
+                const sig = await wallet.signHash(message);
+                return sig.toString('hex');
+            }
+        }
+
+        if (!keyringType['_signTypedData_v4'] && keyringType.__proto__.signTypedData_v4) {
+            keyringType.__proto__._signTypedData_v4 = keyringType.__proto__.signTypedData_v4;
+            keyringType.__proto__.signTypedData_v4 = async function(withAccount, typedData, opts = {}) {
+                const privKey = this.getPrivateKeyFor(withAccount, opts);
+                const message = TypedDataUtils.sign(typedData);
+                const wallet = new QtumWallet(
+                    `0x${privKey.toString('hex')}`,
+                    qtumWalletOpts,
+                );
+                const sig = await wallet.signHash(message);
+                return sig.toString('hex');
+            }
+        }
+    }
 }

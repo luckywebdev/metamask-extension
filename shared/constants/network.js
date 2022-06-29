@@ -15,7 +15,7 @@ export const RINKEBY_NETWORK_ID = '4';
 export const GOERLI_NETWORK_ID = '5';
 export const KOVAN_NETWORK_ID = '42';
 export const LOCALHOST_NETWORK_ID = '1337';
-export const QTUM_MAINNET_NETWORK_ID = '8888';
+export const QTUM_MAINNET_NETWORK_ID = '81';
 export const QTUM_TESTNET_NETWORK_ID = '8889';
 export const QTUM_REGTEST_NETWORK_ID = '8890';
 
@@ -29,7 +29,7 @@ export const BSC_CHAIN_ID = '0x38';
 export const OPTIMISM_CHAIN_ID = '0xa';
 export const OPTIMISM_TESTNET_CHAIN_ID = '0x45';
 export const POLYGON_CHAIN_ID = '0x89';
-export const QTUM_MAINNET_CHAIN_ID = '0x22B8'
+export const QTUM_MAINNET_CHAIN_ID = '0x51'
 export const QTUM_TESTNET_CHAIN_ID = '0x22B9'
 export const QTUM_REGTEST_CHAIN_ID = '0x22BA'
 

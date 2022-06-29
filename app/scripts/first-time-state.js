@@ -30,6 +30,7 @@ const initialState = {
         nickname: 'Localhost 8545',
         rpcPrefs: {},
       },
+      /*
       {
         rpcUrl: QTUM_MAINNET_RPC_URL,
         chainId: QTUM_MAINNET_CHAIN_ID,
@@ -57,6 +58,7 @@ const initialState = {
           blockExplorerUrl: 'http://localhost:8545',
         },
       },
+      */
     ],
   },
 };

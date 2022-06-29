@@ -1,10 +1,10 @@
 {
-  "name": "metamask-crx",
+  "name": "qnekt-crx",
   "version": "10.6.4",
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/MetaMask/metamask-extension.git"
+    "url": "https://github.com/earlgreytech/metamask-extension.git"
   },
   "scripts": {
     "setup": "yarn install && yarn setup:postinstall",
@@ -187,7 +187,7 @@
     "punycode": "^2.1.1",
     "qrcode-generator": "1.4.1",
     "qrcode.react": "^1.0.1",
-    "qtum-ethers-wrapper": "^1.0.0",
+    "qtum-ethers-wrapper": "^1.2.0",
     "qtumjs-lib": "^0.0.8",
     "react": "^16.12.0",
     "react-dnd": "^3.0.2",
