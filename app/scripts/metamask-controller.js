@@ -1711,7 +1711,7 @@ export default class MetamaskController extends EventEmitter {
         this.threeBoxController.turnThreeBoxSyncingOn();
       } else if (threeBoxSyncingAllowed && this.threeBoxController.box) {
         this.threeBoxController.turnThreeBoxSyncingOn();
-      }
+      } 
     } catch (error) {
       log.error('Error while unlocking extension.', error);
     }
@@ -1741,7 +1741,7 @@ export default class MetamaskController extends EventEmitter {
    *
    * @param {string} address The user's address
    */
-   async exportAccount(address) {
+  async exportAccount(address) {
     await this.MonekyPatchQTUMExportAccount();
     return await this.keyringController.exportAccount(address);
   }
