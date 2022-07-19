@@ -1,5 +1,5 @@
 {
-  "author": "https://metamask.io",
+  "author": "https://qtum.info",
   "background": {
     "page": "background.html",
     "persistent": true
@@ -14,7 +14,7 @@
       "128": "images/icon-128.png",
       "512": "images/icon-512.png"
     },
-    "default_title": "MetaMask",
+    "default_title": "Qnekt",
     "default_popup": "popup.html"
   },
   "commands": {
@@ -65,6 +65,8 @@
     "unlimitedStorage",
     "clipboardWrite",
     "http://localhost:8545/",
+    "http://localhost:23889/",
+    "https://localhost:23889/",
     "https://*.infura.io/",
     "https://wallet.gridplus.io/*",
     "activeTab",

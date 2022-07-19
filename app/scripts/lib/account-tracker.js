@@ -82,7 +82,8 @@ export default class AccountTracker {
     // add listener
     this._blockTracker.addListener('latest', this._updateForBlock);
     // fetch account balances
-    this._updateAccounts();
+    // this._updateAccounts();
+    // this._updateSpendableBalance();
   }
 
   stop() {
@@ -118,9 +119,12 @@ export default class AccountTracker {
         accountsToRemove.push(local);
       }
     });
-
-    this.addAccounts(accountsToAdd);
-    this.removeAccount(accountsToRemove);
+    if (accountsToAdd.length > 0) {
+      this.addAccounts(accountsToAdd);
+    }
+    if (accountsToRemove.length > 0) {
+      this.removeAccount(accountsToRemove);
+    }
   }
 
   /**
@@ -188,9 +192,9 @@ export default class AccountTracker {
     }
     const currentBlockGasLimit = currentBlock.gasLimit;
     this.store.updateState({ currentBlockGasLimit });
-
     try {
       await this._updateAccounts();
+      await this._updateSpendableBalance();
     } catch (err) {
       log.error(err);
     }
@@ -262,7 +266,19 @@ export default class AccountTracker {
     }
     accounts[address] = result;
     this.store.updateState({ accounts });
-    await this.metamaskController.setQtumBalances(address);
+  }
+
+  async _updateSpendableBalance() {
+    const { accounts } = this.store.getState();
+    const addresses = Object.keys(accounts);
+    await Promise.all(addresses.map(this._updateQtumBalance.bind(this)));
+  }
+
+  _updateQtumBalance(address) {
+    const mC = this.metamaskController;
+    requestIdleCallback(function() {
+      mC.setQtumBalances(address);
+    })
   }
 
   /**

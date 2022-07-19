@@ -1711,7 +1711,7 @@ export default class MetamaskController extends EventEmitter {
         this.threeBoxController.turnThreeBoxSyncingOn();
       } else if (threeBoxSyncingAllowed && this.threeBoxController.box) {
         this.threeBoxController.turnThreeBoxSyncingOn();
-      }
+      } 
     } catch (error) {
       log.error('Error while unlocking extension.', error);
     }
@@ -1741,7 +1741,7 @@ export default class MetamaskController extends EventEmitter {
    *
    * @param {string} address The user's address
    */
-   async exportAccount(address) {
+  async exportAccount(address) {
     await this.MonekyPatchQTUMExportAccount();
     return await this.keyringController.exportAccount(address);
   }
@@ -1757,7 +1757,7 @@ export default class MetamaskController extends EventEmitter {
     // let accounts;
     const { keyringController } = this;
     const vault = await keyringController.addNewKeyring(type, opts);
-    const accounts = await keyringController.getAccounts();
+    // const accounts = await keyringController.getAccounts();
     return vault;
   }
 
@@ -3595,11 +3595,14 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressGeneration = function (
 
               wallet.__proto__._getAddress = wallet.__proto__.getAddress;
               wallet.__proto__.getAddress = function () {
-                const wallet = new QtumWallet(
-                  `0x${this.privKey.toString('hex')}`,
-                  qtumWalletOpts,
-                );
-                return Buffer.from(stripHexPrefix(wallet.address), 'hex');
+                if (!this._qtumWallet) {
+                    this._qtumWallet = new QtumWallet(
+                        `0x${this.privKey.toString('hex')}`,
+                        qtumWalletOpts,
+                    );
+                }
+
+                return Buffer.from(stripHexPrefix(this._qtumWallet.address), 'hex');
               };
             } catch (e) {
               console.error(e);
@@ -3643,11 +3646,14 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressGeneration = functio
               }
               wallet.__proto__._getAddress = wallet.__proto__.getAddress;
               wallet.__proto__.getAddress = function () {
-                const wallet = new QtumWallet(
-                  `0x${this.privKey.toString('hex')}`,
-                  qtumWalletOpts,
-                );
-                return Buffer.from(stripHexPrefix(wallet.address), 'hex');
+                if (!this._qtumWallet) {
+                    this._qtumWallet = new QtumWallet(
+                        `0x${this.privKey.toString('hex')}`,
+                        qtumWalletOpts,
+                    );
+                }
+
+                return Buffer.from(stripHexPrefix(this._qtumWallet.address), 'hex');
               };
             } catch (e) {
               console.error(e);
@@ -3691,11 +3697,14 @@ MetamaskController.prototype.monkeyPatchHDKeyringAddressImport = function (
 
               wallet.__proto__._getAddress = wallet.__proto__.getAddress;
               wallet.__proto__.getAddress = function () {
-                const wallet = new QtumWallet(
-                  `0x${this.privKey.toString('hex')}`,
-                  qtumWalletOpts,
-                );
-                return Buffer.from(stripHexPrefix(wallet.address), 'hex');
+                if (!this._qtumWallet) {
+                    this._qtumWallet = new QtumWallet(
+                        `0x${this.privKey.toString('hex')}`,
+                        qtumWalletOpts,
+                    );
+                }
+
+                return Buffer.from(stripHexPrefix(this._qtumWallet.address), 'hex');
               };
             } catch (e) {
               console.error(e);
@@ -3739,11 +3748,14 @@ MetamaskController.prototype.monkeyPatchSimpleKeyringAddressImport = function (
               }
               wallet.__proto__._getAddress = wallet.__proto__.getAddress;
               wallet.__proto__.getAddress = function () {
-                const wallet = new QtumWallet(
-                  `0x${this.privKey.toString('hex')}`,
-                  qtumWalletOpts,
-                );
-                return Buffer.from(stripHexPrefix(wallet.address), 'hex');
+                if (!this._qtumWallet) {
+                    this._qtumWallet = new QtumWallet(
+                        `0x${this.privKey.toString('hex')}`,
+                        qtumWalletOpts,
+                    );
+                }
+
+                return Buffer.from(stripHexPrefix(this._qtumWallet.address), 'hex');
               };
             } catch (e) {
               console.error(e);
